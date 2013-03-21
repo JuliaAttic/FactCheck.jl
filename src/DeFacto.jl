@@ -49,7 +49,7 @@ make_pred(v::Any)      = :(test(t) = t == $v)
 function make_test(ex::Expr)
     test, assertion = ex.args
     pred = make_pred(eval(assertion))
-    :($pred($test))
+    :($pred($(esc(test))))
 end
 
 function do_fact(ex::Expr)

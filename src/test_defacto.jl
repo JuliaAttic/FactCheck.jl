@@ -1,5 +1,7 @@
 using DeFacto
 
+inc(x) = x + 1
+
 facts() do
     @fact "foo" => "foo"
 
@@ -15,4 +17,6 @@ facts() do
         2 => iseven
         3 => iseven
     end
+
+    @fact inc(inc(inc(0))) => 2
 end

@@ -88,7 +88,20 @@ green(s::String) = colored(s, GREEN)
 
 pluralize(s::String, n::Number) = n == 1 ? s : string(s, "s")
 
-print_failure(failure::Test.Failure) = println("\n$(red("Failure:")) $(failure.expr)")
+function format_failed_expr(ex::Expr)
+    arg = repr(ex.args[2])
+    test = ex.args[1].args[2]
+    if test.head == :call
+        "$arg => $(test.args[1])"
+    else
+        "$arg => $(repr(test.args[3]))"
+    end
+end
+
+function print_failure(failure::Test.Failure)
+    formatted = format_failed_expr(failure.expr)
+    println("\n$(red("Failure:")) $formatted")
+end
 
 function print_results(suite::TestSuite)
     if suite.nfailures == 0

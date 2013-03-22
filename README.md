@@ -8,11 +8,15 @@ work-in-progress.
 ```jl
 using DeFacto
 
-facts() do
+facts("These are important facts to me") do
 
-    @fact 1 => 1
+    @fact begin
+        1 => 1
+    end
 
-    @fact "two is also two" 2 => 2
+    @fact "two is also two" begin
+        2 => 2
+    end
 
     @fact "predicates can be used" begin
         2 => iseven

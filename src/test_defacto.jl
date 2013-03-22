@@ -2,10 +2,14 @@ using DeFacto
 
 inc(x) = x + 1
 
-facts() do
-    @fact "foo" => "foo"
+facts("Important fact examples") do
+    @fact begin
+        "foo" => "foo"
+    end
 
-    @fact "I can annotate things" 1 => 1
+    @fact "I can annotate things" begin
+        1 => 1
+    end
 
     @fact "strings are strings" begin
         "foo" => "foo"
@@ -18,5 +22,7 @@ facts() do
         3 => iseven
     end
 
-    @fact inc(inc(inc(0))) => 2
+    @fact begin
+        inc(inc(inc(0))) => 2
+    end
 end

@@ -13,14 +13,15 @@ export @fact, facts
 # =====
 
 type TestSuite
+    file::String
+    desc::String
     nsuccesses::Int
     nfailures::Int
     successes::Array{Test.Success, 1}
     failures::Array{Test.Failure, 1}
 end
-TestSuite() = TestSuite(0, 0, Test.Success[], Test.Failure[])
+TestSuite(file::String, desc::String) = TestSuite(file, desc, 0, 0, Test.Success[], Test.Failure[])
 
-test_suite = TestSuite()
 
 # Base.Test integration
 # =====================
@@ -43,33 +44,37 @@ end
 # Core testing functions
 # ======================
 
-make_pred(f::Function) = :(test(t) = $f(t))
-make_pred(v::Any)      = :(test(t) = t == $v)
+make_pred(f::Function) = :(test(t)= $f(t))
+make_pred(v::Any)      = :(test(t)= t == $v)
 
 function make_test(ex::Expr)
-    test, assertion = ex.args
+    test, assertion, line_ann = ex.args
     pred = make_pred(eval(assertion))
-    :($pred($(esc(test))))
+    quote
+        @test begin
+            $line_ann
+            $pred($(esc(test)))
+        end
+    end
 end
 
 function do_fact(ex::Expr)
-    test = make_test(ex)
-    :(@test $test)
-end
-
-function do_fact(desc::String, ex::Expr)
     if ex.head == :block
         out = :(begin end)
         for subex in ex.args
-            if subex.head != :line
-                push!(out.args, do_fact(subex))
+            if subex.head == :line
+                line_ann = subex
+            elseif subex.head == :(=>)
+                push!(subex.args, line_ann)
             end
+            push!(out.args, subex.head == :(=>) ? do_fact(subex) : subex)
         end
         out
     else
-        do_fact(ex)
+        make_test(ex)
     end
 end
+do_fact(desc::String, ex::Expr) = do_fact(ex)
 
 macro fact(ex...)
     do_fact(ex...)
@@ -89,28 +94,34 @@ green(s::String) = colored(s, GREEN)
 pluralize(s::String, n::Number) = n == 1 ? s : string(s, "s")
 
 function format_failed_expr(ex::Expr)
-    arg = repr(ex.args[2])
-    test = ex.args[1].args[2]
-    if test.head == :call
-        "$arg => $(test.args[1])"
-    else
-        "$arg => $(repr(test.args[3]))"
+    line_ann = ex.args[2]
+    line_no = line_ann.args[1]
+    arg = repr(ex.args[end].args[end])
+    prefix = "(line:$line_no) :: $arg => "
+    test = ex.args[end].args[1]
+    if isa(test, Expr)
+        if test.args[end].head == :call
+            string(prefix, "$(test.args[end].args[1])")
+        else
+            string(prefix, "$(repr(test.args[2].args[end]))")
+        end
     end
 end
 
 function print_failure(failure::Test.Failure)
     formatted = format_failed_expr(failure.expr)
-    println("\n$(red("Failure:")) $formatted")
+    formatted != nothing && println("$(red("Failure")) $formatted")
 end
 
 function print_results(suite::TestSuite)
+    println("$(suite.desc) ($(suite.file))")
     if suite.nfailures == 0
         println(green("$(suite.nsuccesses) $(pluralize("fact", suite.nsuccesses)) verified."))
     else
         total = suite.nsuccesses + suite.nfailures
         println("Out of $total total $(pluralize("fact", total)):")
         println(green("  Verified: $(suite.nsuccesses)"))
-        println(red("  Failed:   $(suite.nfailures)"))
+        println(red("  Failed:   $(suite.nfailures)\n"))
 
         map(print_failure, suite.failures)
     end
@@ -119,8 +130,13 @@ end
 # Runner
 # ======
 
-function facts(fthunk::Function)
-    suite = TestSuite()
+function facts(fthunk::Function, desc::String)
+    # TODO: Less totally hacky way of finding the file in which
+    #       this function was defined
+    file_name = string(fthunk.code.ast.args[3].args[2].args[2])
+    file_name = split(file_name, "/")[end]
+
+    suite = TestSuite(file_name, desc)
     test_handler = make_handler(suite)
     push!(Test.handlers, test_handler)
 
@@ -128,5 +144,6 @@ function facts(fthunk::Function)
 
     print_results(suite)
 end
+facts(fthunk::Function) = facts(fthunk, "")
 
 end # module DeFacto

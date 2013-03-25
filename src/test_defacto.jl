@@ -23,6 +23,13 @@ facts("Important fact examples") do
     end
 
     @fact begin
+        x = 10
         inc(inc(inc(0))) => 2
+    end
+
+    @fact begin
+        x = 5
+        y = 10
+        x => y
     end
 end

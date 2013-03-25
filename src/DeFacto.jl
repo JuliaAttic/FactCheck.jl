@@ -44,16 +44,16 @@ end
 # Core testing functions
 # ======================
 
-make_pred(f::Function) = :(test(t)= $f(t))
-make_pred(v::Any)      = :(test(t)= t == $v)
-
 function make_test(ex::Expr)
     test, assertion, line_ann = ex.args
-    pred = make_pred(eval(assertion))
     quote
         @test begin
             $line_ann
-            $pred($(esc(test)))
+            pred = function(t)
+                e = $(esc(assertion))
+                isa(e, Function) ? e(t) : e == t
+            end
+            pred($(esc(test)))
         end
     end
 end
@@ -67,7 +67,7 @@ function do_fact(ex::Expr)
             elseif subex.head == :(=>)
                 push!(subex.args, line_ann)
             end
-            push!(out.args, subex.head == :(=>) ? do_fact(subex) : subex)
+            push!(out.args, subex.head == :(=>) ? do_fact(subex) : esc(subex))
         end
         out
     else
@@ -98,14 +98,8 @@ function format_failed_expr(ex::Expr)
     line_no = line_ann.args[1]
     arg = repr(ex.args[end].args[end])
     prefix = "(line:$line_no) :: $arg => "
-    test = ex.args[end].args[1]
-    if isa(test, Expr)
-        if test.args[end].head == :call
-            string(prefix, "$(test.args[end].args[1])")
-        else
-            string(prefix, "$(repr(test.args[2].args[end]))")
-        end
-    end
+    test = ex.args[4].args[2].args[2].args[2].args[2]
+    string(prefix, "$(repr(test))")
 end
 
 function print_failure(failure::Test.Failure)
@@ -147,3 +141,4 @@ end
 facts(fthunk::Function) = facts(fthunk, "")
 
 end # module DeFacto
+

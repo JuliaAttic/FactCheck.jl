@@ -1,5 +1,7 @@
 using DeFacto
 
+inc(x) = x + 1
+
 @facts "Succeeding examples" begin
 
     @fact 1 => 1
@@ -20,6 +22,7 @@ using DeFacto
         1 => not(2)
         2 => not(isodd)
     end
+
 end
 
 @facts "Failing examples" begin
@@ -35,7 +38,6 @@ end
 
     @fact begin
         x = 10
-        inc(x) = x + 1
         inc(inc(inc(0))) => 2
     end
 
@@ -43,6 +45,10 @@ end
         x = 5
         y = 10
         x => y
+    end
+
+    @fact begin
+        error("foo") => 1
     end
 
 end

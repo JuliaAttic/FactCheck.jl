@@ -33,15 +33,12 @@ error_show(io::IO, r::Error) = error_show(io, r, {})
 type TestSuite
     file::String
     desc::Union(String, Nothing)
-    nsuccesses::Int
-    nfailures::Int
-    nerrors::Int
     successes::Array{Success}
     failures::Array{Failure}
     errors::Array{Error}
 end
 function TestSuite(file::String, desc::Union(String, Nothing))
-    TestSuite(file, desc, 0, 0, 0, Success[], Failure[], Error[])
+    TestSuite(file, desc, Success[], Failure[], Error[])
 end
 
 # Display
@@ -85,13 +82,14 @@ function print_error(e::Error)
 end
 
 function print_results(suite::TestSuite)
-    if suite.nfailures == 0
-        println(green("$(suite.nsuccesses) $(pluralize("fact", suite.nsuccesses)) verified.\n"))
+    if length(suite.failures) == 0 && length(suite.errors) == 0
+        println(green("$(length(suite.successes)) $(pluralize("fact", length(suite.successes))) verified.\n"))
     else
-        total = suite.nsuccesses + suite.nfailures
+        total = length(suite.successes) + length(suite.failures)
         println("Out of $total total $(pluralize("fact", total)):")
-        println(green("  Verified: $(suite.nsuccesses)"))
-        println(red("  Failed:   $(suite.nfailures)\n"))
+        println(green("  Verified: $(length(suite.successes))"))
+        println(  red("  Failed:   $(length(suite.failures))"))
+        println(  red("  Errored:  $(length(suite.errors))\n"))
     end
 end
 
@@ -154,16 +152,13 @@ process_fact(factex::Expr) = process_fact(nothing, factex)
 
 function make_handler(suite::TestSuite)
     function delayed_handler(r::Success)
-        suite.nsuccesses += 1
-        nothing
+        push!(suite.successes, r)
     end
     function delayed_handler(r::Failure)
-        suite.nfailures += 1
         push!(suite.failures, r)
         print_failure(r)
     end
     function delayed_handler(r::Error)
-        suite.nerrors += 1
         push!(suite.errors, r)
         print_error(r)
     end

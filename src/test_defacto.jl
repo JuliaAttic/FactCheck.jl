@@ -2,7 +2,10 @@ using DeFacto
 
 inc(x) = x + 1
 
-facts("Important fact examples") do
+@facts "Important fact examples" begin
+
+    @fact 1 => 1
+
     @fact begin
         "foo" => "foo"
     end

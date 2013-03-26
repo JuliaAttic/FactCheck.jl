@@ -1,83 +1,95 @@
 module DeFacto
 
-using Test
-import Test.do_test,
-       Test.Success,
-       Test.Failure,
-       Test.Error,
-       Test.handlers
+export @fact, @facts
 
-export @fact, facts
-
-# Setup
-# =====
-
-type TestSuite
-    file::String
-    desc::String
-    nsuccesses::Int
-    nfailures::Int
-    successes::Array{Test.Success, 1}
-    failures::Array{Test.Failure, 1}
+abstract Result
+type Success <: Result
+    expr::Expr
+    meta::Dict
 end
-TestSuite(file::String, desc::String) = TestSuite(file, desc, 0, 0, Test.Success[], Test.Failure[])
-
-
-# Base.Test integration
-# =====================
-
-function make_handler(test_suite::TestSuite)
-    function delayed_handler(r::Test.Success)
-        test_suite.nsuccesses += 1
-        nothing
-    end
-    function delayed_handler(r::Test.Failure)
-        test_suite.nfailures += 1
-        push!(test_suite.failures, r)
-    end
-    function delayed_handler(r::Test.Error)
-        rethrow(r)
-    end
-    delayed_handler
+type Failure <: Result
+    expr::Expr
+    meta::Dict
+end
+type Error <: Result
+    expr::Expr
+    err::Exception
+    backtrace
+    meta::Dict
 end
 
-# Core testing functions
-# ======================
+import Base.error_show
 
-function make_test(ex::Expr)
-    test, assertion, line_ann = ex.args
-    quote
-        @test begin
-            $line_ann
-            pred = function(t)
-                e = $(esc(assertion))
-                isa(e, Function) ? e(t) : e == t
-            end
-            pred($(esc(test)))
+function error_show(io::IO, r::Error, backtrace)
+    println(io, "Test error: $(r.expr)")
+    error_show(io, r.err, r.backtrace)
+end
+error_show(io::IO, r::Error) = error_show(io, r, {})
+
+const handlers = Function[]
+
+function do_fact(thunk, factex, meta)
+    result = try
+        thunk() ? Success(factex, meta) : Failure(factex, meta)
+    catch err
+        Error(factex, err, catch_backtrace(), meta)
+    end
+
+    handlers[end](result)
+end
+
+function rewrite_assertion(factex::Expr, meta::Dict)
+    ex, assertion = factex.args
+    test = quote
+        pred = function(t)
+            e = $(esc(assertion))
+            isa(e, Function) ? e(t) : e == t
         end
+        pred($(esc(ex)))
     end
+    :(do_fact(()->$test, $(Expr(:quote, factex)), $meta))
 end
 
-function do_fact(ex::Expr)
-    if ex.head == :block
+function process_fact(factex::Expr, meta::Dict)
+    rewrite_assertion(factex, meta)
+    :(do_fact(() -> $(rewrite_assertion(factex)),
+              $(Expr(:quote, factex)),
+              $meta))
+end
+function process_fact(desc::Union(String, Nothing), factex::Expr)
+    if factex.head == :block
         out = :(begin end)
-        for subex in ex.args
-            if subex.head == :line
-                line_ann = subex
-            elseif subex.head == :(=>)
-                push!(subex.args, line_ann)
+        for ex in factex.args
+            if ex.head == :line
+                line_ann = ex
+            else
+                push!(out.args,
+                      ex.head == :(=>) ?
+                      rewrite_assertion(ex, {"desc" => desc, "line" => line_ann}) :
+                      esc(ex))
             end
-            push!(out.args, subex.head == :(=>) ? do_fact(subex) : esc(subex))
         end
         out
     else
-        make_test(ex)
+        rewrite_assertion(factex, {"desc" => desc})
     end
 end
-do_fact(desc::String, ex::Expr) = do_fact(ex)
+process_fact(factex::Expr) = process_fact(nothing, factex)
 
-macro fact(ex...)
-    do_fact(ex...)
+macro fact(args...)
+    process_fact(args...)
+end
+
+type TestSuite
+    file::String
+    desc::Union(String, Nothing)
+    nsuccesses::Int
+    nfailures::Int
+    successes::Array{Success, 1}
+    failures::Array{Failure, 1}
+end
+function TestSuite(file::String, desc::Union(String, Nothing))
+    TestSuite(file, desc, 0, 0, Success[], Failure[])
 end
 
 # Display
@@ -93,22 +105,23 @@ green(s::String) = colored(s, GREEN)
 
 pluralize(s::String, n::Number) = n == 1 ? s : string(s, "s")
 
-function format_failed_expr(ex::Expr)
-    line_ann = ex.args[2]
-    line_no = line_ann.args[1]
-    arg = repr(ex.args[end].args[end])
-    prefix = "(line:$line_no) :: $arg => "
-    test = ex.args[4].args[2].args[2].args[2].args[2]
-    string(prefix, "$(repr(test))")
+function format_failed(ex::Expr)
+    x, y = ex.args
+    "$(repr(x)) => $(repr(y))"
 end
 
-function print_failure(failure::Test.Failure)
-    formatted = format_failed_expr(failure.expr)
-    formatted != nothing && println("$(red("Failure")) $formatted")
+function print_failure(f::Failure)
+    formatted = "$(red("Failure")) "
+    formatted = string(formatted, has(f.meta, "line") ?
+                       "(line:$(f.meta["line"].args[1])) :: " :
+                       "")
+    formatted = string(formatted, format_failed(f.expr))
+
+    println(formatted)
 end
 
 function print_results(suite::TestSuite)
-    println("$(suite.desc) ($(suite.file))")
+    println()
     if suite.nfailures == 0
         println(green("$(suite.nsuccesses) $(pluralize("fact", suite.nsuccesses)) verified."))
     else
@@ -116,29 +129,50 @@ function print_results(suite::TestSuite)
         println("Out of $total total $(pluralize("fact", total)):")
         println(green("  Verified: $(suite.nsuccesses)"))
         println(red("  Failed:   $(suite.nfailures)\n"))
-
-        map(print_failure, suite.failures)
     end
+end
+
+function format_suite(suite::TestSuite)
+    suite.desc != nothing ? "$(suite.desc) ($(suite.file))" : suite.file
 end
 
 # Runner
 # ======
 
-function facts(fthunk::Function, desc::String)
-    # TODO: Less totally hacky way of finding the file in which
-    #       this function was defined
-    file_name = string(fthunk.code.ast.args[3].args[2].args[2])
-    file_name = split(file_name, "/")[end]
+function make_handler(suite::TestSuite)
+    function delayed_handler(r::Success)
+        suite.nsuccesses += 1
+        nothing
+    end
+    function delayed_handler(r::Failure)
+        suite.nfailures += 1
+        push!(suite.failures, r)
+        print_failure(r)
+    end
+    function delayed_handler(r::Error)
+        rethrow(r)
+    end
+    delayed_handler
+end
+
+function do_facts(desc::Union(String, Nothing), facts_block::Expr)
+    file_name = split(string(facts_block.args[1].args[2]), "/")[end]
 
     suite = TestSuite(file_name, desc)
     test_handler = make_handler(suite)
-    push!(Test.handlers, test_handler)
+    push!(handlers, test_handler)
 
-    fthunk()
-
-    print_results(suite)
+    quote
+        println(string(format_suite($suite), "\n"))
+        $(esc(facts_block))
+        print_results($suite)
+    end
 end
-facts(fthunk::Function) = facts(fthunk, "")
+do_facts(facts_block::Expr) = do_facts(nothing, facts_block)
+
+macro facts(args...)
+    do_facts(args...)
+end
 
 end # module DeFacto
 

@@ -1,6 +1,10 @@
 module DeFacto
 
-export @fact, @facts
+export @fact,
+       @facts,
+
+       # assertion helpers
+       not
 
 abstract Result
 type Success <: Result
@@ -45,11 +49,13 @@ end
 
 RED     = "\x1b[31m"
 GREEN   = "\x1b[32m"
+BOLD    = "\x1b[1m"
 DEFAULT = "\x1b[0m"
 
 colored(s::String, color) = string(color, s, DEFAULT)
 red(s::String)   = colored(s, RED)
 green(s::String) = colored(s, GREEN)
+bold(s::String)  = colored(s, BOLD)
 
 pluralize(s::String, n::Number) = n == 1 ? s : string(s, "s")
 
@@ -79,9 +85,8 @@ function print_error(e::Error)
 end
 
 function print_results(suite::TestSuite)
-    println()
     if suite.nfailures == 0
-        println(green("$(suite.nsuccesses) $(pluralize("fact", suite.nsuccesses)) verified."))
+        println(green("$(suite.nsuccesses) $(pluralize("fact", suite.nsuccesses)) verified.\n"))
     else
         total = suite.nsuccesses + suite.nfailures
         println("Out of $total total $(pluralize("fact", total)):")
@@ -91,7 +96,7 @@ function print_results(suite::TestSuite)
 end
 
 function format_suite(suite::TestSuite)
-    suite.desc != nothing ? "$(suite.desc) ($(suite.file))" : suite.file
+    bold(string(suite.desc != nothing ? "$(suite.desc) ($(suite.file))" : suite.file, "\n"))
 end
 
 # Core
@@ -173,7 +178,8 @@ function do_facts(desc::Union(String, Nothing), facts_block::Expr)
     push!(handlers, test_handler)
 
     quote
-        println(string(format_suite($suite), "\n"))
+        println()
+        println(format_suite($suite))
         $(esc(facts_block))
         print_results($suite)
     end

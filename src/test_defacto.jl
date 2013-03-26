@@ -35,4 +35,8 @@ inc(x) = x + 1
         y = 10
         x => y
     end
+
+    @fact begin
+        error("neat") => :throws
+    end
 end

@@ -11,6 +11,9 @@ using DeFacto
 inc(x) = x + 1
 
 @facts "Important fact examples" begin
+
+    @fact 1 => 1
+
     @fact begin
         "foo" => "foo"
     end
@@ -39,6 +42,10 @@ inc(x) = x + 1
         x = 5
         y = 10
         x => y
+    end
+
+    @fact begin
+        error("neat") => :throws
     end
 end
 ```

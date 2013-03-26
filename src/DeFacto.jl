@@ -97,15 +97,21 @@ function do_fact(thunk, factex, meta)
     handlers[end](result)
 end
 
-function rewrite_assertion(factex::Expr, meta::Dict)
-    ex, assertion = factex.args
-    test = quote
+throws_pred(ex) = :(try $(esc(ex)); false catch e true end)
+
+function fact_pred(ex, assertion)
+    quote
         pred = function(t)
             e = $(esc(assertion))
             isa(e, Function) ? e(t) : e == t
         end
         pred($(esc(ex)))
     end
+end
+
+function rewrite_assertion(factex::Expr, meta::Dict)
+    ex, assertion = factex.args
+    test = assertion == :(:throws) ? throws_pred(ex) : fact_pred(ex, assertion)
     :(do_fact(()->$test, $(Expr(:quote, factex)), $meta))
 end
 

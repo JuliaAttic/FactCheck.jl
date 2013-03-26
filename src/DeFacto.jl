@@ -26,54 +26,6 @@ function error_show(io::IO, r::Error, backtrace)
 end
 error_show(io::IO, r::Error) = error_show(io, r, {})
 
-const handlers = Function[]
-
-function do_fact(thunk, factex, meta)
-    result = try
-        thunk() ? Success(factex, meta) : Failure(factex, meta)
-    catch err
-        Error(factex, err, catch_backtrace(), meta)
-    end
-
-    handlers[end](result)
-end
-
-function rewrite_assertion(factex::Expr, meta::Dict)
-    ex, assertion = factex.args
-    test = quote
-        pred = function(t)
-            e = $(esc(assertion))
-            isa(e, Function) ? e(t) : e == t
-        end
-        pred($(esc(ex)))
-    end
-    :(do_fact(()->$test, $(Expr(:quote, factex)), $meta))
-end
-
-function process_fact(desc::Union(String, Nothing), factex::Expr)
-    if factex.head == :block
-        out = :(begin end)
-        for ex in factex.args
-            if ex.head == :line
-                line_ann = ex
-            else
-                push!(out.args,
-                      ex.head == :(=>) ?
-                      rewrite_assertion(ex, {"desc" => desc, "line" => line_ann}) :
-                      esc(ex))
-            end
-        end
-        out
-    else
-        rewrite_assertion(factex, {"desc" => desc})
-    end
-end
-process_fact(factex::Expr) = process_fact(nothing, factex)
-
-macro fact(args...)
-    process_fact(args...)
-end
-
 type TestSuite
     file::String
     desc::Union(String, Nothing)
@@ -130,8 +82,52 @@ function format_suite(suite::TestSuite)
     suite.desc != nothing ? "$(suite.desc) ($(suite.file))" : suite.file
 end
 
-# Runner
-# ======
+# Core
+# ====
+
+const handlers = Function[]
+
+function do_fact(thunk, factex, meta)
+    result = try
+        thunk() ? Success(factex, meta) : Failure(factex, meta)
+    catch err
+        Error(factex, err, catch_backtrace(), meta)
+    end
+
+    handlers[end](result)
+end
+
+function rewrite_assertion(factex::Expr, meta::Dict)
+    ex, assertion = factex.args
+    test = quote
+        pred = function(t)
+            e = $(esc(assertion))
+            isa(e, Function) ? e(t) : e == t
+        end
+        pred($(esc(ex)))
+    end
+    :(do_fact(()->$test, $(Expr(:quote, factex)), $meta))
+end
+
+function process_fact(desc::Union(String, Nothing), factex::Expr)
+    if factex.head == :block
+        out = :(begin end)
+        for ex in factex.args
+            if ex.head == :line
+                line_ann = ex
+            else
+                push!(out.args,
+                      ex.head == :(=>) ?
+                      rewrite_assertion(ex, {"desc" => desc, "line" => line_ann}) :
+                      esc(ex))
+            end
+        end
+        out
+    else
+        rewrite_assertion(factex, {"desc" => desc})
+    end
+end
+process_fact(factex::Expr) = process_fact(nothing, factex)
 
 function make_handler(suite::TestSuite)
     function delayed_handler(r::Success)
@@ -168,5 +164,8 @@ macro facts(args...)
     do_facts(args...)
 end
 
-end # module DeFacto
+macro fact(args...)
+    process_fact(args...)
+end
 
+end # module DeFacto

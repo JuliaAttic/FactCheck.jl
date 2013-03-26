@@ -31,11 +31,13 @@ type TestSuite
     desc::Union(String, Nothing)
     nsuccesses::Int
     nfailures::Int
-    successes::Array{Success, 1}
-    failures::Array{Failure, 1}
+    nerrors::Int
+    successes::Array{Success}
+    failures::Array{Failure}
+    errors::Array{Error}
 end
 function TestSuite(file::String, desc::Union(String, Nothing))
-    TestSuite(file, desc, 0, 0, Success[], Failure[])
+    TestSuite(file, desc, 0, 0, 0, Success[], Failure[], Error[])
 end
 
 # Display
@@ -56,14 +58,24 @@ function format_failed(ex::Expr)
     "$(repr(x)) => $(repr(y))"
 end
 
+function format_line(r::Result, s::String)
+    "$s $(has(r.meta, "line") ? "(line:$(r.meta["line"].args[1])) " : ""):: "
+end
+
 function print_failure(f::Failure)
     formatted = "$(red("Failure")) "
-    formatted = string(formatted, has(f.meta, "line") ?
-                       "(line:$(f.meta["line"].args[1])) :: " :
-                       "")
-    formatted = string(formatted, format_failed(f.expr))
+    formatted = format_line(f, formatted)
+    formatted = string(formatted, format_failed(f.expr), "\n")
 
     println(formatted)
+end
+
+function print_error(e::Error)
+    formatted = "$(red("Error"))   "
+    formatted = format_line(e, formatted)
+    print(formatted)
+    error_show(STDOUT, e)
+    println("\n")
 end
 
 function print_results(suite::TestSuite)
@@ -146,7 +158,9 @@ function make_handler(suite::TestSuite)
         print_failure(r)
     end
     function delayed_handler(r::Error)
-        rethrow(r)
+        suite.nerrors += 1
+        push!(suite.errors, r)
+        print_error(r)
     end
     delayed_handler
 end
@@ -173,5 +187,10 @@ end
 macro fact(args...)
     process_fact(args...)
 end
+
+# Assertion functions
+# ===================
+
+not(x) = isa(x, Function) ? (y) -> !x(y) : (y) -> x != y
 
 end # module DeFacto

@@ -39,4 +39,9 @@ inc(x) = x + 1
     @fact begin
         error("neat") => :throws
     end
+
+    @fact begin
+        1 => not(2)
+        2 => not(isodd)
+    end
 end

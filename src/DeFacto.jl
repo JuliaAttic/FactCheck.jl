@@ -50,12 +50,6 @@ function rewrite_assertion(factex::Expr, meta::Dict)
     :(do_fact(()->$test, $(Expr(:quote, factex)), $meta))
 end
 
-function process_fact(factex::Expr, meta::Dict)
-    rewrite_assertion(factex, meta)
-    :(do_fact(() -> $(rewrite_assertion(factex)),
-              $(Expr(:quote, factex)),
-              $meta))
-end
 function process_fact(desc::Union(String, Nothing), factex::Expr)
     if factex.head == :block
         out = :(begin end)

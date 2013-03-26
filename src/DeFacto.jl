@@ -2,9 +2,15 @@ module DeFacto
 
 export @fact,
        @facts,
-
        # assertion helpers
-       not
+       not,
+       truthy,
+       falsey,
+       falsy,
+       anything,
+       irrelevant,
+       exactly,
+       roughly
 
 abstract Result
 type Success <: Result
@@ -85,7 +91,7 @@ function print_results(suite::TestSuite)
     if length(suite.failures) == 0 && length(suite.errors) == 0
         println(green("$(length(suite.successes)) $(pluralize("fact", length(suite.successes))) verified.\n"))
     else
-        total = length(suite.successes) + length(suite.failures)
+        total = length(suite.successes) + length(suite.failures) + length(suite.errors)
         println("Out of $total total $(pluralize("fact", total)):")
         println(green("  Verified: $(length(suite.successes))"))
         println(  red("  Failed:   $(length(suite.failures))"))
@@ -189,9 +195,19 @@ macro fact(args...)
     process_fact(args...)
 end
 
-# Assertion functions
-# ===================
+# Assertion helpers
+# =================
 
 not(x) = isa(x, Function) ? (y) -> !x(y) : (y) -> x != y
+
+truthy(x) = nothing != x != false
+falsey = falsy = not(truthy)
+
+irrelevant = anything(x) = true
+
+exactly(x) = (y) -> is(x, y)
+
+roughly(n::Number, range::Number) = (i) -> (n-range) <= i <= (n+range)
+roughly(n::Number) = roughly(n, n/1000)
 
 end # module DeFacto

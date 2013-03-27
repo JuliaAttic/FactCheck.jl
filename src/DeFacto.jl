@@ -325,7 +325,9 @@ end
 # Logical not for values and functions.
 not(x) = isa(x, Function) ? (y) -> !x(y) : (y) -> x != y
 
-# Truthiness is defined as not `nothing` or `false`. Falsiness is its opposite.
+# Truthiness is defined as not `nothing` or `false` (which is 0).
+# Falsiness is its opposite.
+#
 truthy(x) = nothing != x != false
 falsey = falsy = not(truthy)
 

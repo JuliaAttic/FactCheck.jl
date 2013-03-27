@@ -100,11 +100,13 @@ end
 #     # => "Success (line:10) :: "
 #
 function format_line(r::Result, s::String)
-    if has(r.meta, "line")
+    formatted = if has(r.meta, "line")
         "$s (line:$(r.meta["line"].args[1])) :: "
     else
         "$s :: "
     end
+
+    string(formatted, r.meta["desc"] == nothing ? "" : r.meta["desc"])
 end
 
 # Implementing Base.show(io::IO, t::SomeType) gives you control over the
@@ -124,9 +126,6 @@ import Base.show
 function show(io::IO, f::Failure)
     formatted = "$(red("Failure"))"
     formatted = format_line(f, formatted)
-    desc = f.meta["desc"]
-    formatted = string(formatted, desc == nothing ? "" : desc)
-
     println(io, formatted)
     println(io, format_assertion(f.expr))
 end

@@ -47,7 +47,7 @@ end
         x => y
     end
 
-    @fact begin
+    @fact "throws an error" begin
         error("foo") => 1
     end
 

@@ -122,17 +122,19 @@ end
 import Base.show
 
 function show(io::IO, f::Failure)
-    formatted = "$(red("Failure")) "
+    formatted = "$(red("Failure"))"
     formatted = format_line(f, formatted)
-    formatted = string(formatted, format_assertion(f.expr), "\n")
+    desc = f.meta["desc"]
+    formatted = string(formatted, desc == nothing ? "" : desc)
 
-    print(io, formatted)
+    println(io, formatted)
+    println(io, format_assertion(f.expr))
 end
 
 function show(io::IO, e::Error)
-    formatted = "$(red("Error"))   "
+    formatted = "$(red("Error"))  "
     formatted = format_line(e, formatted)
-    print(io, formatted)
+    println(io, formatted)
     error_show(STDOUT, e)
     println(io)
 end

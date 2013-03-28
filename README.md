@@ -89,7 +89,7 @@ assertion functions are provided.
 end
 ```
 
-They can be found at the bottom of [DeFacto.jl](https://github.com/zachallaun/DeFacto/blob/master/src/DeFacto.jl).
+They can be found at the bottom of [DeFacto.jl](https://github.com/zachallaun/DeFacto.jl/blob/master/src/DeFacto.jl).
 
 ### Contributing
 

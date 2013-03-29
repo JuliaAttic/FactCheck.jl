@@ -2,7 +2,7 @@
 
 [Midje](https://github.com/marick/Midje)-like testing for Julia.
 
-![Example output](http://s15.postimg.org/4j9hpmf63/Screen_Shot_2013_03_27_at_6_18_07_PM.png)
+![Example output](http://img594.imageshack.us/img594/8189/screenshot20130329at222.png)
 
 ### Why?
 

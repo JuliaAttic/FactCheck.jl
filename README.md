@@ -1,4 +1,4 @@
-# de facto
+# fact check
 
 [Midje](https://github.com/marick/Midje)-like testing for Julia.
 
@@ -15,7 +15,7 @@ work in progress.
 ### Usage
 
 ```jl
-using DeFacto
+using FactCheck
 ```
 
 Two macros are required for testing: `@facts` and `@fact`. The first is
@@ -89,7 +89,7 @@ assertion functions are provided.
 end
 ```
 
-They can be found at the bottom of [DeFacto.jl](https://github.com/zachallaun/DeFacto.jl/blob/master/src/DeFacto.jl).
+They can be found at the bottom of [FactCheck.jl](https://github.com/zachallaun/FactCheck.jl/blob/master/src/FactCheck.jl).
 
 ### Contributing
 

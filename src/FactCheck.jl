@@ -1,4 +1,4 @@
-module DeFacto
+module FactCheck
 
 export @fact,
        @facts,
@@ -80,7 +80,7 @@ bold(s::String)  = colored(s, BOLD) # Bold is a color. Shut up.
 
 pluralize(s::String, n::Number) = n == 1 ? s : string(s, "s")
 
-# Formats a DeFacto assertion (e.g. `fn(1) => 2`)
+# Formats a FactCheck assertion (e.g. `fn(1) => 2`)
 #
 #     format_assertion(:(fn(1) => 2))
 #     # => ":(fn(1)) => 2"
@@ -154,17 +154,17 @@ function format_suite(suite::TestSuite)
     bold(string(suite.desc != nothing ? "$(suite.desc) ($(suite.file))" : suite.file, "\n"))
 end
 
-# DeFacto core functions and macros
-# =================================
+# FactCheck core functions and macros
+# ========================================
 
 # The last handler function found in `handlers` will be passed test results.
-# This means the default handler set up by DeFacto could be overridden with
-# `push!(DeFacto.handlers, my_custom_handler)`.
+# This means the default handler set up by FactCheck could be overridden with
+# `push!(FactCheck.handlers, my_custom_handler)`.
 #
 const handlers = Function[]
 
 # `do_fact` constructs a Success, Failure, or Error depending on the outcome
-# of a test and passes it off to the active test handler (`DeFacto.handlers[end]`).
+# of a test and passes it off to the active test handler (`FactCheck.handlers[end]`).
 #
 # `thunk` should be a parameterless boolean function representing a test.
 # `factex` should be the Expr from which `thunk` was constructed.
@@ -346,4 +346,4 @@ exactly(x) = (y) -> is(x, y)
 roughly(n::Number, range::Number) = (i) -> (n-range) <= i <= (n+range)
 roughly(n::Number) = roughly(n, n/1000)
 
-end # module DeFacto
+end # module FactCheck

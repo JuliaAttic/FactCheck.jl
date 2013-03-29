@@ -1,4 +1,4 @@
-DeFacto is licensed under the MIT License, the same as Julia:
+FactCheck is licensed under the MIT License, the same as Julia:
 
 > Permission is hereby granted, free of charge, to any person obtaining
 > a copy of this software and associated documentation files (the

@@ -1,4 +1,4 @@
-using DeFacto
+using FactCheck
 
 inc(x) = x + 1
 

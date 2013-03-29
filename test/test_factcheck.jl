@@ -1,14 +1,14 @@
-using DeFacto
+using FactCheck
 
 # We have to define macros around certain functions that return expressions
 # so that the :escape Exprs inside them are expanded.
 #
 # See: https://gist.github.com/zachallaun/5257930
 #
-macro throws_pred(ex) DeFacto.throws_pred(ex) end
-macro fact_pred(x, y) DeFacto.fact_pred(x, y) end
+macro throws_pred(ex) FactCheck.throws_pred(ex) end
+macro fact_pred(x, y) FactCheck.fact_pred(x, y) end
 
-@facts "DeFacto core functions" begin
+@facts "FactCheck core functions" begin
 
     @fact "throws_pred is true on error" begin
         @throws_pred(1 + 1)   => false
@@ -37,7 +37,7 @@ macro fact_pred(x, y) DeFacto.fact_pred(x, y) end
 
 end
 
-@facts "DeFacto assertion helper functions" begin
+@facts "FactCheck assertion helper functions" begin
 
     @fact "`not` works for values and functions" begin
         notone = not(1)

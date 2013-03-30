@@ -12,6 +12,12 @@ huge fan. Midje is a simple and powerful testing framework written for
 Clojure, and so I sought to (at least partially) recreate it. This is a
 work in progress.
 
+### Installation
+
+```jl
+Pkg.add("FactCheck")
+```
+
 ### Usage
 
 ```jl

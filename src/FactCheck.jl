@@ -18,10 +18,12 @@ export @fact,
 abstract Result
 type Success <: Result
     expr::Expr
+    val
     meta::Dict
 end
 type Failure <: Result
     expr::Expr
+    val
     meta::Dict
 end
 type Error <: Result
@@ -100,14 +102,11 @@ end
 #     # => "Success (line:10) :: "
 #
 function format_line(r::Result, s::String)
-    formatted = if has(r.meta, "line")
-        "$s (line:$(r.meta["line"].args[1])) :: "
-    else
-        "$s :: "
-    end
-
-    string(formatted, r.meta["desc"] == nothing ? "" : r.meta["desc"])
+    formatted = has(r.meta, "line") ? "$s :: (line:$(r.meta["line"].args[1]))" : s
+    string(formatted, r.meta["desc"] == nothing ? "" : " :: $(r.meta["desc"])")
 end
+
+format_value(r::Failure, s::String) = "$s :: got $(repr(r.val))"
 
 # Implementing Base.show(io::IO, t::SomeType) gives you control over the
 # printed representation of that type. For example:
@@ -126,12 +125,13 @@ import Base.show
 function show(io::IO, f::Failure)
     formatted = "$(red("Failure"))"
     formatted = format_line(f, formatted)
+    formatted = format_value(f, formatted)
     println(io, formatted)
     println(io, format_assertion(f.expr))
 end
 
 function show(io::IO, e::Error)
-    formatted = "$(red("Error"))  "
+    formatted = "$(red("Error"))"
     formatted = format_line(e, formatted)
     println(io, formatted)
     error_show(STDOUT, e)
@@ -172,7 +172,8 @@ const handlers = Function[]
 #
 function do_fact(thunk::Function, factex::Expr, meta::Dict)
     result = try
-        thunk() ? Success(factex, meta) : Failure(factex, meta)
+        res, val = thunk()
+        res ? Success(factex, val, meta) : Failure(factex, val, meta)
     catch err
         Error(factex, err, catch_backtrace(), meta)
     end
@@ -183,7 +184,14 @@ end
 # Constructs a boolean expression from a given expression `ex` that, when
 # evaluated, returns true if `ex` throws an error and false if `ex` does not.
 #
-throws_pred(ex) = :(try $(esc(ex)); false catch e true end)
+throws_pred(ex) = quote
+    try
+        $(esc(ex))
+        (false, "no error")
+    catch e
+        (true, "error")
+    end
+end
 
 # Constructs a boolean expression from two values that works differently
 # depending on what `assertion` evaluates to.
@@ -196,7 +204,7 @@ function fact_pred(ex, assertion)
     quote
         pred = function(t)
             e = $(esc(assertion))
-            isa(e, Function) ? e(t) : e == t
+            isa(e, Function) ? (e(t), t) : (e == t, t)
         end
         pred($(esc(ex)))
     end

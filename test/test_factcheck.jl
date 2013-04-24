@@ -11,28 +11,28 @@ macro fact_pred(x, y) FactCheck.fact_pred(x, y) end
 @facts "FactCheck core functions" begin
 
     @fact "throws_pred is true on error" begin
-        @throws_pred(1 + 1)   => false
-        @throws_pred(error()) => true
+        @throws_pred(1 + 1)   => (false, "no error")
+        @throws_pred(error()) => (true, "error")
     end
 
     @fact "fact_pred tests equality on values" begin
-        @fact_pred(1, 1) => true
-        @fact_pred("foo", "foo") => true
+        @fact_pred(1, 1) => (true, 1)
+        @fact_pred("foo", "foo") => (true, "foo")
 
         type Foo a end
         ==(x::Foo, y::Foo) = x.a == y.a
-        @fact_pred(Foo(1), Foo(1)) => true
+        @fact_pred(Foo(1), Foo(1)) => (x) -> x[1]
 
         type Bar a end
-        @fact_pred(Bar(1), Bar(1)) => false
+        @fact_pred(Bar(1), Bar(1)) => (x) -> !x[1]
     end
 
     @fact "fact_pred applies Function assertions" begin
-        @fact_pred(2, iseven) => true
-        @fact_pred(2, isodd)  => false
+        @fact_pred(2, iseven) => (true, 2)
+        @fact_pred(2, isodd)  => (false, 2)
 
         isone(x) = x == 1
-        @fact_pred(1, isone)  => true
+        @fact_pred(1, isone)  => (true, 1)
     end
 
 end

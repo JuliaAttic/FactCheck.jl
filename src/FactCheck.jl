@@ -357,8 +357,8 @@ exactly(x) = (y) -> is(x, y)
 include("/opt/julia/extras/nearequal.jl")
 
 roughly(n::Number, rtol::Number, atol::Number) = (i) -> isapprox(i,n,rtol,atol)
-roughly(n::Number, tol::Number) = (i) -> isapprox(i, n, tol, tol)  #(i) -> (n-range) <= i <= (n+range)
-roughly(n::Number) = (i) -> isapprox(i,n) # rougly(n, n/1000)
+roughly(n::Number, tol::Number) = (i) -> isapprox(i, n, tol, tol)
+roughly(n::Number) = (i) -> isapprox(i,n)
 
 roughly(X::AbstractArray) = Y::AbstractArray -> size(X) == size(Y) ? all(isapprox(X,Y)) : error("Arrays must be the same size (first was $(size(X)), second was $(size(Y))")
 roughly(X::AbstractArray, tol::Number) = roughly(X,tol,tol)

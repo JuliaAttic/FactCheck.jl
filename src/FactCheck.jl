@@ -102,7 +102,7 @@ end
 #     # => "Success (line:10) :: "
 #
 function format_line(r::Result, s::String)
-    formatted = has(r.meta, "line") ? "$s :: (line:$(r.meta["line"].args[1]))" : s
+    formatted = haskey(r.meta, "line") ? "$s :: (line:$(r.meta["line"].args[1]))" : s
     string(formatted, r.meta["desc"] == nothing ? "" : " :: $(r.meta["desc"])")
 end
 
@@ -351,7 +351,17 @@ exactly(x) = (y) -> is(x, y)
 #
 #     @fact 4.99999 => roughly(5)
 #
-roughly(n::Number, range::Number) = (i) -> (n-range) <= i <= (n+range)
-roughly(n::Number) = roughly(n, n/1000)
+
+# isapprox comes from nearequal.jl, which is currently available in JuliaLang/extras. Likely to move soon...
+# this import is a workaround that works on my machine only
+include("/opt/julia/extras/nearequal.jl")
+
+roughly(n::Number, rtol::Number, atol::Number) = (i) -> isapprox(i,n,rtol,atol)
+roughly(n::Number, tol::Number) = (i) -> isapprox(i, n, tol, tol)  #(i) -> (n-range) <= i <= (n+range)
+roughly(n::Number) = (i) -> isapprox(i,n) # rougly(n, n/1000)
+
+roughly(X::AbstractArray) = Y::AbstractArray -> size(X) == size(Y) ? all(isapprox(X,Y)) : error("Arrays must be the same size (first was $(size(X)), second was $(size(Y))")
+roughly(X::AbstractArray, tol::Number) = roughly(X,tol,tol)
+roughly(X::AbstractArray, rtol::Number, atol::Number) = Y::AbstractArray -> size(X) == size(Y) ? all(isapprox(X,Y,rtol,atol)) : error("Arrays must be the same size (first was $(size(X)), second was $(size(Y))")
 
 end # module FactCheck

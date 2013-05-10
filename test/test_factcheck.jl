@@ -81,10 +81,15 @@ end
     end
 
     @fact "`roughly` compares numbers... roughly" begin
-        roughly(2.5)(2.4999) => true
+        2.4999999999999 => roughly(2.5) #roughly(2.5)(2.4999) => true
+        9.5 => roughly(10, 1.0) #roughly(10, 1)(9.5) => true
+        10.5 => roughly(10, 1.0) #roughly(10, 1)(10.5) => true
+    end
 
-        roughly(10, 1)(9.5) => true
-        roughly(10, 1)(10.5) => true
+    @fact "`roughly` compares matrixes... roughly" begin
+        X = [1.1 1.2; 2.1 2.2]
+        Y = X + [0 0.000001; -0.00000349 0.00001]
+        X => roughly(Y)
     end
 
 end

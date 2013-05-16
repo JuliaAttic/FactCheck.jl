@@ -138,6 +138,11 @@ function show(io::IO, e::Error)
     println(io)
 end
 
+function show(io::IO, s::Success)
+    formatted = "$(green("Success")) :: $(format_assertion(s.expr))"
+    print(io, formatted)
+end
+
 function show(io::IO, suite::TestSuite)
     if length(suite.failures) == 0 && length(suite.errors) == 0
         println(io, green("$(length(suite.successes)) $(pluralize("fact", length(suite.successes))) verified."))
@@ -179,6 +184,7 @@ function do_fact(thunk::Function, factex::Expr, meta::Dict)
     end
 
     !isempty(handlers) && handlers[end](result)
+    result
 end
 
 # Constructs a boolean expression from a given expression `ex` that, when

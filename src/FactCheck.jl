@@ -358,12 +358,19 @@ exactly(x) = (y) -> is(x, y)
 #     @fact 4.99999 => roughly(5)
 #
 
-roughly(n::Number, rtol::Number, atol::Number) = (i) -> isapprox(i,n,rtol,atol)
-roughly(n::Number, tol::Number) = (i) -> isapprox(i, n, tol, tol)
-roughly(n::Number) = (i) -> isapprox(i,n)
+roughly(n::Number; kvtols...) = i::Number -> isapprox(i,n; kvtols...)
 
-roughly(X::AbstractArray) = Y::AbstractArray -> size(X) == size(Y) ? all(isapprox(X,Y)) : error("Arrays must be the same size (first was $(size(X)), second was $(size(Y))")
-roughly(X::AbstractArray, tol::Number) = roughly(X,tol,tol)
-roughly(X::AbstractArray, rtol::Number, atol::Number) = Y::AbstractArray -> size(X) == size(Y) ? all(isapprox(X,Y,rtol,atol)) : error("Arrays must be the same size (first was $(size(X)), second was $(size(Y))")
+roughly(X::AbstractArray; kvtols...) = Y::AbstractArray -> begin
+    if size(X) != size(Y) 
+        return false
+    end
+
+    for i in 1:length(X)
+        if !isapprox(X[i], Y[i]; kvtols...)
+            return false
+        end
+    end
+    return true
+end
 
 end # module FactCheck

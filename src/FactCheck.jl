@@ -358,10 +358,6 @@ exactly(x) = (y) -> is(x, y)
 #     @fact 4.99999 => roughly(5)
 #
 
-# isapprox comes from nearequal.jl, which is currently available in
-# JuliaLang/extras. Likely to move soon...
-include(joinpath("/", split(JULIA_HOME, "/")[1:end-2]..., "extras", "nearequal.jl"))
-
 roughly(n::Number, rtol::Number, atol::Number) = (i) -> isapprox(i,n,rtol,atol)
 roughly(n::Number, tol::Number) = (i) -> isapprox(i, n, tol, tol)
 roughly(n::Number) = (i) -> isapprox(i,n)

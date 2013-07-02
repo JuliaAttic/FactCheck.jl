@@ -320,6 +320,8 @@ function facts(f::Function, desc)
     f()
 
     println(suite)
+
+    pop!(handlers)
 end
 
 # Assertion helpers

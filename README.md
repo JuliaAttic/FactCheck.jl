@@ -17,7 +17,7 @@ work in progress.
 In a REQUIRE file:
 
 ```jl
-FactCheck 0.0.2
+FactCheck 0.1.0
 ```
 
 In the REPL:

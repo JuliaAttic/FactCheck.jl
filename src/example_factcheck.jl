@@ -17,6 +17,12 @@ facts("Succeeding examples") do
         @fact 2 => not(isodd)
     end
 
+    context("generating facts") do
+        for i=1:5
+            @fact i => i
+        end
+    end
+
 end
 
 facts("Failing examples") do

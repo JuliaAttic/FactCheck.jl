@@ -6,49 +6,45 @@ facts("Succeeding examples") do
 
     @fact 1 => 1
 
-    @fact begin
-        "foo" => "foo"
+    context("You can define contexts") do
+        @fact 1 => 1
     end
 
-    @fact "I can annotate things" begin
-        1 => 1
-    end
+    @fact error("neat") => :throws
 
-    @fact begin
-        error("neat") => :throws
-    end
-
-    @fact begin
-        1 => not(2)
-        2 => not(isodd)
+    context("group facts") do
+        @fact 1 => not(2)
+        @fact 2 => not(isodd)
     end
 
 end
 
 facts("Failing examples") do
 
-    @fact "strings are strings" begin
-        "bar" => "barr"
-        "baz" => "bazz"
+    @fact 1 => 2
+
+    context("strings are strings") do
+        @fact "bar" => "barr"
+        @fact "baz" => "bazz"
     end
 
-    @fact "some numbers are even" begin
-        3 => iseven
+    context("some numbers are even") do
+        @fact 3 => iseven
     end
 
-    @fact begin
+    context() do
         x = 10
-        inc(inc(inc(0))) => 2
+        @fact inc(inc(inc(0))) => 2
     end
 
-    @fact begin
+    context() do
         x = 5
         y = 10
-        x => y
+        @fact x => y
     end
 
-    @fact "throws an error" begin
-        error("foo") => 1
+    context("throws an error") do
+        @fact error("foo") => 1
     end
 
 end

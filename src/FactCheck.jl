@@ -2,6 +2,7 @@ module FactCheck
 
 export @fact,
        facts,
+       context,
        # assertion helpers
        not,
        truthy,
@@ -11,6 +12,29 @@ export @fact,
        irrelevant,
        exactly,
        roughly
+
+# HACK: get the current line number
+#
+# This only works inside of a function body:
+#
+#     julia> hmm = function()
+#                2
+#                3
+#                getline()
+#            end
+#
+#     julia> hmm()
+#     4
+#
+function getline()
+    bt = backtrace()[2:]
+    for i=1:length(bt)
+        lookup = ccall(:jl_lookup_code_address, Any, (Ptr{Void}, Int32), bt[i], 0)
+        if lookup != ()
+            return lookup[3]
+        end
+    end
+end
 
 # Represents the result of a test. The `meta` dictionary is used to retain
 # information about the test, such as its file, line number, description, etc.
@@ -102,8 +126,8 @@ end
 #     # => "Success (line:10) :: "
 #
 function format_line(r::Result, s::String)
-    formatted = haskey(r.meta, "line") ? "$s :: (line:$(r.meta["line"].args[1]))" : s
-    string(formatted, r.meta["desc"] == nothing ? "" : " :: $(r.meta["desc"])")
+    formatted = haskey(r.meta, "line") ? "$s :: (line:$(r.meta["line"]))" : s
+    string(formatted, isempty(contexts) ? "" : " :: $(contexts[end])")
 end
 
 format_value(r::Failure, s::String) = "$s :: got $(repr(r.val))"
@@ -170,6 +194,10 @@ end
 #
 const handlers = Function[]
 
+# A list of test contexts. `contexts[end]` should be the inner-most context.
+#
+const contexts = String[]
+
 # `do_fact` constructs a Success, Failure, or Error depending on the outcome
 # of a test and passes it off to the active test handler (`FactCheck.handlers[end]`).
 #
@@ -218,71 +246,32 @@ function fact_pred(ex, assertion)
     end
 end
 
-# Turns a fact expression (e.g. `:(1 => 1)`) into a `do_fact` call. For
+# Turns a fact expression (e.g. `:(1 => 1)`) into a boolean expression. For
 # instance:
 #
-#     rewrite_assertion(:(1 => 1), {"line" => line_ann})
-#     # => :(do_fact( () -> 1 == 1, :(1 => 1), {"line" => line_ann} )
+#     rewrite_assertion(:(1 => 1))
+#     # => () -> 1 == 1
 #
-function rewrite_assertion(factex::Expr, meta::Dict)
+function rewrite_assertion(factex::Expr)
     ex, assertion = factex.args
     test = assertion == :(:throws) ? throws_pred(ex) : fact_pred(ex, assertion)
-    :(do_fact(()->$test, $(Expr(:quote, factex)), $meta))
+    :(()->$test)
 end
 
-# `process_fact` gets all of the arguments given to `@fact`, and is responsible
-# for the bulk of the work.
+# `@fact` rewrites assertions and generates calls to `do_fact`, which
+# is responsible for actually running the test.
 #
-# Two expression types are supported:
+#     macroexpand(:(@fact 1 => 1))
+#     #=> do_fact( () -> 1 == 1, :(1 => 1), ...)
 #
-#     @fact 1 => 1
-#     @fact begin
-#         1 => 1
-#         2 => 2
-#     end
-#
-# In the first case, the expression is passed to `rewrite_assertion` directly.
-# In the second case, a new block is constructed with every nested assertion
-# rewritten. For instance:
-#
-#      @fact begin
-#          x = 1
-#          x => 1
-#          y = 2
-#          y => 2
-#      end
-#
-#      # becomes roughly
-#
-#      begin
-#          x = 1
-#          do_fact( () -> x == 1, :(x => 1), ...)
-#          y = 2
-#          do_fact( () -> y == 2, :(y => 2), ...)
-#      end
-#
-function process_fact(desc, factex::Expr)
-    if factex.head == :block
-        out = :(begin end)
-        for ex in factex.args
-            if ex.head == :line
-                line_ann = ex
-            else
-                push!(out.args,
-                      ex.head == :(=>) ?
-                      rewrite_assertion(ex, {"desc" => desc, "line" => line_ann}) :
-                      esc(ex))
-            end
-        end
-        out
+macro fact(factex::Expr)
+    if factex.head == :(=>)
+        :(do_fact($(rewrite_assertion(factex)),
+                  $(Expr(:quote, factex)),
+                  {"line" => getline()}))
     else
-        rewrite_assertion(factex, {"desc" => desc})
+        error("@fact doesn't support expression: $factex")
     end
-end
-process_fact(factex::Expr) = process_fact(nothing, factex)
-
-macro fact(args...)
-    process_fact(args...)
 end
 
 # Constructs a function that handles Successes, Failures, and Errors,
@@ -303,6 +292,15 @@ function make_handler(suite::TestSuite)
     end
     delayed_handler
 end
+
+# Executes a battery of tests in some descriptive context.
+#
+function context(f::Function, desc)
+    push!(contexts, desc)
+    f()
+    pop!(contexts)
+end
+context(f::Function) = f()
 
 # `facts` creates test scope. It is responsible for setting up a testing
 # environment, which means constructing a `TestSuite`, generating and

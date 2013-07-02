@@ -14,8 +14,16 @@ work in progress.
 
 ### Installation
 
+In a REQUIRE file:
+
 ```jl
-Pkg.add("FactCheck")
+FactCheck 0.0.2
+```
+
+In the REPL:
+
+```jl
+julia> Pkg.add("FactCheck")
 ```
 
 ### Usage
@@ -24,81 +32,87 @@ Pkg.add("FactCheck")
 using FactCheck
 ```
 
-Two macros are required for testing: `@facts` and `@fact`. The first is
-used to describe the scope of your tests and to do some setup, while the
-second is used to make assertions.
-
-`@facts` can be called in two ways:
+The top-level function `facts` describes the scope of your tests and
+does the setup required by the test runner. It can be called with or
+without a description:
 
 ```jl
-@facts "With a description" begin
+facts("With a description") do
     # ...
 end
 
-@facts begin
+facts() do
     # ...
 end
 ```
 
-`@fact` can be called in three ways, and must be called within a
-`@facts` block:
+Inside of the function passed to `facts`, a fact can be asserted using
+the `@fact` macro.
 
 ```jl
-@facts "Simple facts" begin
+facts("Simple facts") do
 
     # expression => assertion
     @fact 1 => 1
 
-    @fact "one is one" 1 => 1
-
-    @fact "numbers are themselves" begin
-        1 => 1
-        2 => 2
-        3 => 3
-    end
-
 end
 ```
 
-Each instance of `=>` will be transformed into a test. The type of test
-will depend on the value to the right of the `=>`, which we'll call the
-assertion. If the assertion is a `Function`, it will be called on the
-expression. Otherwise, `==` will be called.
+Related facts can also be grouped inside of a `context`:
 
 ```jl
-@facts "Slightly more complicated facts" begin
+facts("Simple facts") do
 
-    @fact "functions can be used as assertions" begin
-        1 => isodd
-        2 => iseven
+    context("numbers are themselves") begin
+        @fact 1 => 1
+        @fact 2 => 2
+        @fact 3 => 3
     end
 
 end
 ```
 
-As this is rather convenient and reads nicely, a number of helper
-assertion functions are provided.
+The symbol `=>` is used as an assertion more general than `==`. Each
+fact will be transformed into a test, the type of which depends on the
+value to the right of the `=>`. (We'll call that value the assertion.)
+
+There are three forms that the assertion can take:
 
 ```jl
-@facts "Using helper assertions" begin
+# If the assertion is a function, it will be called on the expression
+# to determine whether or not the fact holds.
+@fact 2 => iseven
 
-    @fact "some helpers operate on values" begin
-        false => anything
+# If the assertion is the symbol `:throws`, the fact holds if the expression
+# throws an exception.
+@fact error() => :throws
 
-        1 => not(2)
+# Otherwise, the fact holds if the expression is `==` to the assertion.
+@fact [1,2,3] => [1,2,3]
+```
+
+As the function-assertion form is rather convenient and reads nicely,
+a number of helper assertion functions are provided.
+
+```jl
+facts("Using helper assertions") do
+
+    context("some helpers operate on values") do
+        @fact false => anything
+        @fact 1 => not(2)
     end
 
-    @fact "... or on functions" begin
-        2 => not(isodd)
+    context("... or on functions") do
+        @fact 2 => not(isodd)
     end
 
 end
 ```
 
-They can be found at the bottom of [FactCheck.jl](https://github.com/zachallaun/FactCheck.jl/blob/master/src/FactCheck.jl).
+These can be found at the bottom of [FactCheck.jl](https://github.com/zachallaun/FactCheck.jl/blob/master/src/FactCheck.jl).
 
 ### Contributing
 
 I'm incredibly open to contributions. The code base is quite small and
-is (I think) well documented. I'm also happy to explain any decisions
-I've made, with the caveat that they may have been uninformed.
+(I think) well documented. I'm also happy to explain any decisions
+I've made, with the understanding that they may have been uninformed.

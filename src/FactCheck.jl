@@ -58,12 +58,12 @@ error_show(io::IO, r::Error) = error_show(io, r, {})
 #
 type TestSuite
     file::String
-    desc::Union(String, Nothing)
+    desc
     successes::Array{Success}
     failures::Array{Failure}
     errors::Array{Error}
 end
-function TestSuite(file::String, desc::Union(String, Nothing))
+function TestSuite(file::String, desc)
     TestSuite(file, desc, Success[], Failure[], Error[])
 end
 
@@ -259,7 +259,7 @@ end
 #          do_fact( () -> y == 2, :(y => 2), ...)
 #      end
 #
-function process_fact(desc::Union(String, Nothing), factex::Expr)
+function process_fact(desc, factex::Expr)
     if factex.head == :block
         out = :(begin end)
         for ex in factex.args
@@ -306,7 +306,7 @@ end
 # The `facts_block` is expected to be an `Expr(:block)` containing many
 # invocations of `@fact`.
 #
-function do_facts(desc::Union(String, Nothing), facts_block::Expr)
+function do_facts(desc, facts_block::Expr)
     facts_block.head == :block || error("@facts must be passed a `begin ... end` block, given: $facts_block")
 
     file_name = split(string(facts_block.args[1].args[2]), "/")[end]
@@ -361,7 +361,7 @@ exactly(x) = (y) -> is(x, y)
 roughly(n::Number; kvtols...) = i::Number -> isapprox(i,n; kvtols...)
 
 roughly(X::AbstractArray; kvtols...) = Y::AbstractArray -> begin
-    if size(X) != size(Y) 
+    if size(X) != size(Y)
         return false
     end
 

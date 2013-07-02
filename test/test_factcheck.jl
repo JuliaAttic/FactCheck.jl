@@ -8,7 +8,11 @@ using FactCheck
 macro throws_pred(ex) FactCheck.throws_pred(ex) end
 macro fact_pred(x, y) FactCheck.fact_pred(x, y) end
 
-@facts "FactCheck core functions" begin
+type Foo a end
+type Bar a end
+==(x::Foo, y::Foo) = x.a == y.a
+
+facts("FactCheck core functions") do
 
     @fact "throws_pred is true on error" begin
         @throws_pred(1 + 1)   => (false, "no error")
@@ -19,11 +23,8 @@ macro fact_pred(x, y) FactCheck.fact_pred(x, y) end
         @fact_pred(1, 1) => (true, 1)
         @fact_pred("foo", "foo") => (true, "foo")
 
-        type Foo a end
-        ==(x::Foo, y::Foo) = x.a == y.a
         @fact_pred(Foo(1), Foo(1)) => (x) -> x[1]
 
-        type Bar a end
         @fact_pred(Bar(1), Bar(1)) => (x) -> !x[1]
     end
 
@@ -37,7 +38,10 @@ macro fact_pred(x, y) FactCheck.fact_pred(x, y) end
 
 end
 
-@facts "FactCheck assertion helper functions" begin
+type Baz end
+type Bazz a end
+
+facts("FactCheck assertion helper functions") do
 
     @fact "`not` works for values and functions" begin
         notone = not(1)
@@ -73,10 +77,8 @@ end
         exactly(x)(x) => true
 
         # types with no fields return a singleton object when instantiated
-        type Baz end
         exactly(Baz())(Baz()) => true
 
-        type Bazz a end
         exactly(Bazz(1))(Bazz(1)) => false
     end
 

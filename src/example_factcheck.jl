@@ -2,7 +2,7 @@ using FactCheck
 
 inc(x) = x + 1
 
-@facts "Succeeding examples" begin
+facts("Succeeding examples") do
 
     @fact 1 => 1
 
@@ -25,7 +25,7 @@ inc(x) = x + 1
 
 end
 
-@facts "Failing examples" begin
+facts("Failing examples") do
 
     @fact "strings are strings" begin
         "bar" => "barr"
@@ -53,13 +53,13 @@ end
 
 end
 
-@facts "Assertion helpers" begin
+facts("Assertion helpers") do
 
     @fact 1 => not(iseven)
     @fact 1 => truthy
     @fact nothing => falsey
     @fact false => anything
     @fact iseven => exactly(iseven)
-    @fact 2.4999 => roughly(2.5)
+    @fact 2.499999 => roughly(2.5)
 
 end

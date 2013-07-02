@@ -1,7 +1,7 @@
 module FactCheck
 
 export @fact,
-       @facts,
+       facts,
        # assertion helpers
        not,
        truthy,
@@ -281,6 +281,10 @@ function process_fact(desc, factex::Expr)
 end
 process_fact(factex::Expr) = process_fact(nothing, factex)
 
+macro fact(args...)
+    process_fact(args...)
+end
+
 # Constructs a function that handles Successes, Failures, and Errors,
 # pushing them into a given TestSuite and printing Failures and Errors
 # as they arrive.
@@ -300,39 +304,24 @@ function make_handler(suite::TestSuite)
     delayed_handler
 end
 
-# `do_facts` creates test scope. It gets all of the arguments from `@facts`
-# and is responsible for setting up a testing environment, which means
-# constructing a TestSuite, generating and registering test handlers, and
-# reporting results.
+# `facts` creates test scope. It is responsible for setting up a testing
+# environment, which means constructing a `TestSuite`, generating and
+# registering test handlers, and reporting results.
 #
-# The `facts_block` is expected to be an `Expr(:block)` containing many
-# invocations of `@fact`.
+# `f` should be a function containing `@fact` invocations.
 #
-function do_facts(desc, facts_block::Expr)
-    facts_block.head == :block || error("@facts must be passed a `begin ... end` block, given: $facts_block")
-
-    filename = split(string(facts_block.args[1].args[2]), "/")[end]
-
-    suite = TestSuite(filename, desc)
+facts(f::Function) = facts(f, nothing)
+function facts(f::Function, desc)
+    suite = TestSuite(nothing, desc)
     test_handler = make_handler(suite)
     push!(handlers, test_handler)
 
-    quote
-        println()
-        println(format_suite($suite))
-        $(esc(facts_block))
-        println($suite)
-    end
-end
-do_facts(facts_block::Expr) = do_facts(nothing, facts_block)
+    println()
+    println(format_suite(suite))
 
-# Top-level macros, pass all arguments to helper functions for implementation
-# flexibility. See `do_facts` and `process_fact`.
-macro facts(args...)
-    do_facts(args...)
-end
-macro fact(args...)
-    process_fact(args...)
+    f()
+
+    println(suite)
 end
 
 # Assertion helpers

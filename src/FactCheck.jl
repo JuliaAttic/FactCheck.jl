@@ -57,14 +57,14 @@ error_show(io::IO, r::Error) = error_show(io, r, {})
 # information about the tests such as their file and description.
 #
 type TestSuite
-    file::String
+    filename
     desc
     successes::Array{Success}
     failures::Array{Failure}
     errors::Array{Error}
 end
-function TestSuite(file::String, desc)
-    TestSuite(file, desc, Success[], Failure[], Error[])
+function TestSuite(filename, desc)
+    TestSuite(filename, desc, Success[], Failure[], Error[])
 end
 
 # Display
@@ -156,7 +156,9 @@ function show(io::IO, suite::TestSuite)
 end
 
 function format_suite(suite::TestSuite)
-    bold(string(suite.desc != nothing ? "$(suite.desc) ($(suite.file))" : suite.file, "\n"))
+    s = suite.desc != nothing ? "$(suite.desc) " : ""
+    s = string(s, suite.filename != nothing ? "($(suite.filename))" : "")
+    bold(string(s, "\n"))
 end
 
 # FactCheck core functions and macros
@@ -309,9 +311,9 @@ end
 function do_facts(desc, facts_block::Expr)
     facts_block.head == :block || error("@facts must be passed a `begin ... end` block, given: $facts_block")
 
-    file_name = split(string(facts_block.args[1].args[2]), "/")[end]
+    filename = split(string(facts_block.args[1].args[2]), "/")[end]
 
-    suite = TestSuite(file_name, desc)
+    suite = TestSuite(filename, desc)
     test_handler = make_handler(suite)
     push!(handlers, test_handler)
 

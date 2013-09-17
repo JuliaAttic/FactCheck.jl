@@ -27,11 +27,16 @@ export @fact,
 #     4
 #
 function getline()
-    bt = backtrace()[2:]
-    for i=1:length(bt)
-        lookup = ccall(:jl_lookup_code_address, Any, (Ptr{Void}, Int32), bt[i], 0)
+    bt = backtrace()
+    issecond = false
+    for frame in bt
+        lookup = ccall(:jl_lookup_code_address, Any, (Ptr{Void}, Int32), frame, 0)
         if lookup != ()
-            return lookup[3]
+            if issecond
+                return lookup[3]
+            else
+                issecond = true
+            end
         end
     end
 end

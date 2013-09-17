@@ -47,13 +47,16 @@ end
 ```
 
 Inside of the function passed to `facts`, a fact can be asserted using
-the `@fact` macro.
+the `@fact` macro, or `@fact_throws` if you're asserting a thrown
+exception.
 
 ```jl
 facts("Simple facts") do
 
     # expression => assertion
     @fact 1 => 1
+
+    @fact_throws error()
 
 end
 ```
@@ -76,16 +79,12 @@ The symbol `=>` is used as an assertion more general than `==`. Each
 fact will be transformed into a test, the type of which depends on the
 value to the right of the `=>`. (We'll call that value the assertion.)
 
-There are three forms that the assertion can take:
+An assertion can take two forms:
 
 ```jl
 # If the assertion is a function, it will be called on the expression
 # to determine whether or not the fact holds.
 @fact 2 => iseven
-
-# If the assertion is the symbol `:throws`, the fact holds if the expression
-# throws an exception.
-@fact error() => :throws
 
 # Otherwise, the fact holds if the expression is `==` to the assertion.
 @fact [1,2,3] => [1,2,3]

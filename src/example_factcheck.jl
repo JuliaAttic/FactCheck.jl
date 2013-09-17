@@ -10,7 +10,7 @@ facts("Succeeding examples") do
         @fact 1 => 1
     end
 
-    @fact error("neat") => :throws
+    @fact_throws error("neat")
 
     context("group facts") do
         @fact 1 => not(2)

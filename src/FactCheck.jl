@@ -1,6 +1,7 @@
 module FactCheck
 
 export @fact,
+       @fact_throws,
        facts,
        context,
        # assertion helpers
@@ -251,18 +252,6 @@ function fact_pred(ex, assertion)
     end
 end
 
-# Turns a fact expression (e.g. `:(1 => 1)`) into a boolean expression. For
-# instance:
-#
-#     rewrite_assertion(:(1 => 1))
-#     # => () -> 1 == 1
-#
-function rewrite_assertion(factex::Expr)
-    ex, assertion = factex.args
-    test = assertion == :(:throws) ? throws_pred(ex) : fact_pred(ex, assertion)
-    :(()->$test)
-end
-
 # `@fact` rewrites assertions and generates calls to `do_fact`, which
 # is responsible for actually running the test.
 #
@@ -271,12 +260,18 @@ end
 #
 macro fact(factex::Expr)
     if factex.head == :(=>)
-        :(do_fact($(rewrite_assertion(factex)),
+        :(do_fact(() -> $(fact_pred(factex.args...)),
                   $(Expr(:quote, factex)),
                   {"line" => getline()}))
     else
         error("@fact doesn't support expression: $factex")
     end
+end
+
+macro fact_throws(factex::Expr)
+    :(do_fact(() -> $(throws_pred(factex)),
+              $(Expr(:quote, factex)),
+              {"line" => getline()}))
 end
 
 # Constructs a function that handles Successes, Failures, and Errors,

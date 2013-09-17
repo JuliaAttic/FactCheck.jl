@@ -70,12 +70,12 @@ end
 #     # ...
 #     rethrow(err)
 #
-import Base.error_show
-function error_show(io::IO, r::Error, backtrace)
+import Base.showerror
+function showerror(io::IO, r::Error, backtrace)
     println(io, "Test error: $(r.expr)")
-    error_show(io, r.err, r.backtrace)
+    showerror(io, r.err, r.backtrace)
 end
-error_show(io::IO, r::Error) = error_show(io, r, {})
+showerror(io::IO, r::Error) = showerror(io, r, {})
 
 # A TestSuite collects the results of a series of tests, as well as some
 # information about the tests such as their file and description.
@@ -158,7 +158,7 @@ function show(io::IO, e::Error)
     formatted = "$(red("Error"))"
     formatted = format_line(e, formatted)
     println(io, formatted)
-    error_show(STDOUT, e)
+    showerror(STDOUT, e)
     println(io)
 end
 

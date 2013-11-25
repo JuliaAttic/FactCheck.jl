@@ -1,3 +1,8 @@
+[Why?](#why?)|
+[Installation](#installation)|
+[Usage](#usage)|
+[Contributing](#constributing)
+
 # fact check
 
 [Midje](https://github.com/marick/Midje)-like testing for Julia.
@@ -6,11 +11,9 @@
 
 ### Why?
 
-[Base.Test](https://github.com/JuliaLang/julia/blob/master/base/test.jl)
-seemed to be the only option in the way of Julia testing, and I wasn't a
-huge fan. Midje is a simple and powerful testing framework written for
-Clojure, and so I sought to (at least partially) recreate it. This is a
-work in progress.
+[Base.Test](https://github.com/JuliaLang/julia/blob/master/base/test.jl) seemed to be the only option in the way of Julia testing, and I wasn't a huge fan.
+Midje is a simple and powerful testing framework written for Clojure, and so I sought to (at least partially) recreate it.
+This is a work in progress.
 
 ### Installation
 
@@ -24,9 +27,8 @@ julia> Pkg.add("FactCheck")
 using FactCheck
 ```
 
-The top-level function `facts` describes the scope of your tests and
-does the setup required by the test runner. It can be called with or
-without a description:
+The top-level function `facts` describes the scope of your tests and does the setup required by the test runner.
+It can be called with or without a description:
 
 ```jl
 facts("With a description") do
@@ -38,9 +40,7 @@ facts() do
 end
 ```
 
-Inside of the function passed to `facts`, a fact can be asserted using
-the `@fact` macro, or `@fact_throws` if you're asserting a thrown
-exception.
+Inside of the function passed to `facts`, a fact can be asserted using the `@fact` macro, or `@fact_throws` if you're asserting a thrown exception.
 
 ```jl
 facts("Simple facts") do
@@ -67,9 +67,8 @@ facts("Simple facts") do
 end
 ```
 
-The symbol `=>` is used as an assertion more general than `==`. Each
-fact will be transformed into a test, the type of which depends on the
-value to the right of the `=>`. (We'll call that value the assertion.)
+The symbol `=>` is used as an assertion more general than `==`.
+Each fact will be transformed into a test, the type of which depends on the value to the right of the `=>`. (We'll call that value the assertion.)
 
 An assertion can take two forms:
 
@@ -82,8 +81,7 @@ An assertion can take two forms:
 @fact [1,2,3] => [1,2,3]
 ```
 
-As the function-assertion form is rather convenient and reads nicely,
-a number of helper assertion functions are provided.
+As the function-assertion form is rather convenient and reads nicely, a number of helper assertion functions are provided.
 
 ```jl
 facts("Using helper assertions") do
@@ -104,6 +102,5 @@ These can be found at the bottom of [FactCheck.jl](https://github.com/zachallaun
 
 ### Contributing
 
-I'm incredibly open to contributions. The code base is quite small and
-(I think) well documented. I'm also happy to explain any decisions
-I've made, with the understanding that they may have been uninformed.
+I'm incredibly open to contributions. The code base is quite small and (I think) well documented.
+I'm also happy to explain any decisions I've made, with the understanding that they may have been uninformed.

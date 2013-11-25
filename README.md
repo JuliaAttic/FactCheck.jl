@@ -14,14 +14,6 @@ work in progress.
 
 ### Installation
 
-In a REQUIRE file:
-
-```jl
-FactCheck 0.1.0
-```
-
-In the REPL:
-
 ```jl
 julia> Pkg.add("FactCheck")
 ```

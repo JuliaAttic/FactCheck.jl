@@ -1,7 +1,7 @@
-[Why?](#why?)|
-[Installation](#installation)|
-[Usage](#usage)|
-[Contributing](#constributing)
+[Why?](#why) |
+[Installation](#installation) |
+[Usage](#usage) |
+[Contributing](#contributing)
 
 # fact check
 

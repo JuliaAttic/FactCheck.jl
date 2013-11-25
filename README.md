@@ -58,7 +58,7 @@ Related facts can also be grouped inside of a `context`:
 ```jl
 facts("Simple facts") do
 
-    context("numbers are themselves") begin
+    context("numbers are themselves") do
         @fact 1 => 1
         @fact 2 => 2
         @fact 3 => 3

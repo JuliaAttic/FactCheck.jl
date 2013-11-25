@@ -1,6 +1,7 @@
 **[Why?](#why)** |
 **[Installation](#installation)** |
 **[Usage](#usage)** |
+**[Workflow](#workflow)** |
 **[Contributing](#contributing)**
 
 # fact check
@@ -9,19 +10,19 @@
 
 ![Example output](http://img594.imageshack.us/img594/8189/screenshot20130329at222.png)
 
-### Why?
+## Why?
 
 [Base.Test](https://github.com/JuliaLang/julia/blob/master/base/test.jl) seemed to be the only option in the way of Julia testing, and I wasn't a huge fan.
 Midje is a simple and powerful testing framework written for Clojure, and so I sought to (at least partially) recreate it.
 This is a work in progress.
 
-### Installation
+## Installation
 
 ```jl
 julia> Pkg.add("FactCheck")
 ```
 
-### Usage
+## Usage
 
 ```jl
 using FactCheck
@@ -98,9 +99,36 @@ facts("Using helper assertions") do
 end
 ```
 
-These can be found at the bottom of [FactCheck.jl](https://github.com/zachallaun/FactCheck.jl/blob/master/src/FactCheck.jl).
+These can be found at the bottom of [src/FactCheck.jl](https://github.com/zachallaun/FactCheck.jl/blob/master/src/FactCheck.jl).
 
-### Contributing
+## Workflow
+
+First, make sure your tests are inside of a module.
+
+```jl
+module TestFactCheck
+
+# assertions live here
+
+end # module
+```
+
+Then you can simply `reload` your test file repeatedly inside of a Julia REPL.
+Because the tests are in a module, you won't run into constant-redefinition errors if you create constants (like types or immutables) inside of your tests.
+(Julia allows you to repeatedly replace a module inside a single process, but you cannot replace constants.)
+
+```jl
+julia> reload("test_factcheck")
+# Output summary...
+
+julia> reload("test_factcheck")
+Warning: replacing module TestFactCheck
+# Output summary...
+```
+
+This workflow has the advantage of not requiring an extra invocation of `julia` on each test run, which would add a few seconds to your testing time.
+
+## Contributing
 
 I'm incredibly open to contributions. The code base is quite small and (I think) well documented.
 I'm also happy to explain any decisions I've made, with the understanding that they may have been uninformed.

@@ -1,3 +1,5 @@
+module TestFactCheck
+
 using FactCheck
 
 # We have to define macros around certain functions that return expressions
@@ -95,3 +97,5 @@ facts("FactCheck assertion helper functions") do
     end
 
 end
+
+end # module

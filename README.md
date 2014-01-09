@@ -6,6 +6,9 @@
 
 # fact check
 
+[![Build Status](https://travis-ci.org/rened/FactCheck.jl.png)](https://travis-ci.org/rened/FactCheck.jl)
+
+
 [Midje](https://github.com/marick/Midje)-like testing for Julia.
 
 ![Example output](http://img594.imageshack.us/img594/8189/screenshot20130329at222.png)

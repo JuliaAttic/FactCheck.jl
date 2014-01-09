@@ -4,7 +4,7 @@ export @fact,
        @fact_throws,
        facts,
        context,
-       getStats,
+       getstats,
        # assertion helpers
        not,
        truthy,
@@ -328,9 +328,9 @@ function facts(f::Function, desc)
     pop!(handlers)
 end
 
-# `getStats` return a dictionary with a summary over all tests run
+# `getstats` return a dictionary with a summary over all tests run
 
-function getStats()
+function getstats()
     s = 0
     f = 0
     e = 0

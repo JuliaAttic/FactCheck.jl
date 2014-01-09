@@ -98,7 +98,7 @@ facts("FactCheck assertion helper functions") do
 
 end
 
-exit(getStats()["nNonSuccessful"])
+exit(getstats()["nNonSuccessful"])
 
 end # module
 

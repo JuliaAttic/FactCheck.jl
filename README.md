@@ -128,6 +128,31 @@ Warning: replacing module TestFactCheck
 
 This workflow has the advantage of not requiring an extra invocation of `julia` on each test run, which would add a few seconds to your testing time.
 
+A convenience macro named `@runtest` is also provided.  The `@runtest` macro takes a package name and any number of valid test files. 
+It expects the test files to be in the `/test` directory and to be appended by `.jl`. It simply `include`s the specified files, which 
+allows multiple calls within a single Julia session.
+
+```jl
+julia> @runtest FactCheck test_factcheck
+
+FactCheck core functions
+
+9 facts verified.
+
+
+FactCheck assertion helper functions
+
+24 facts verified.
+```
+
+The macro also works on tests outside the `FactCheck` framework. 
+
+```jl
+julia> @runtest Stats means variability 
+
+# these tests pass silently
+```
+
 ## Contributing
 
 I'm incredibly open to contributions. The code base is quite small and (I think) well documented.

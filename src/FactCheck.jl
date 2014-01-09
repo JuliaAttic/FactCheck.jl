@@ -12,7 +12,8 @@ export @fact,
        anything,
        irrelevant,
        exactly,
-       roughly
+       roughly, 
+       @runtest
 
 # HACK: get the current line number
 #
@@ -362,6 +363,12 @@ roughly(X::AbstractArray; kvtols...) = Y::AbstractArray -> begin
         end
     end
     return true
+end
+
+macro runtest(pkg, files...)
+  for f in files
+    include(Pkg.dir("$pkg/test/$f.jl"))
+  end
 end
 
 end # module FactCheck

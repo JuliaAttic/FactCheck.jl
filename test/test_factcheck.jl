@@ -92,7 +92,7 @@ facts("FactCheck assertion helper functions") do
         X = [1.1 1.2; 2.1 2.2]
         Y = X + [0 0.000001; -0.00000349 0.00001]
         Z = [1 1; 2 2]
-        @fact X => roughly(Y)
+        @fact X => 1 # to test travis, was: roughly(Y)
         @fact X => roughly(Z; atol=0.2)
     end
 

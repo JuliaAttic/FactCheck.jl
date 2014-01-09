@@ -4,6 +4,7 @@ export @fact,
        @fact_throws,
        facts,
        context,
+       getStats,
        # assertion helpers
        not,
        truthy,
@@ -13,6 +14,8 @@ export @fact,
        irrelevant,
        exactly,
        roughly
+
+allresults = {}
 
 # HACK: get the current line number
 #
@@ -220,6 +223,7 @@ function do_fact(thunk::Function, factex::Expr, meta::Dict)
     end
 
     !isempty(handlers) && handlers[end](result)
+    push!(allresults, result)
     result
 end
 
@@ -322,6 +326,28 @@ function facts(f::Function, desc)
     println(suite)
 
     pop!(handlers)
+end
+
+# `getStats` return a dictionary with a summary over all tests run
+
+function getStats()
+    s = 0
+    f = 0
+    e = 0
+    ns = 0
+    for r in allresults
+        if isa(r, Success)
+            s += 1
+        elseif isa(r, Failure)
+            f += 1
+            ns += 1
+        elseif isa(r, Error)
+            e += 1
+            ns += 1
+        end
+    end
+    assert(s+f+e == length(allresults) == s+ns)
+    {"nSuccesses" => s, "nFailures" => f, "nErrors" => e, "nNonSuccessful" => ns}
 end
 
 # Assertion helpers

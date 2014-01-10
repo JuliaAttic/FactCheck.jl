@@ -351,7 +351,7 @@ function getstats()
     {"nSuccesses" => s, "nFailures" => f, "nErrors" => e, "nNonSuccessful" => ns}
 end
 
-exitWithTestStatus() = exit(getStats()["nNonSuccessful"])
+exitWithTestStatus() = exit(getstats()["nNonSuccessful"])
 
 # Assertion helpers
 # =================

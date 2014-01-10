@@ -140,7 +140,7 @@ modlue TestFactCheck
 
     ### your tests...
 
-    exit(getstats()["nNonSuccessful"])
+    exitWithTestStatus()
 
 end # module
 ```

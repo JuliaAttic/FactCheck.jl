@@ -5,6 +5,7 @@ export @fact,
        facts,
        context,
        getstats,
+       exitWithTestStatus,
        # assertion helpers
        not,
        truthy,
@@ -349,6 +350,8 @@ function getstats()
     assert(s+f+e == length(allresults) == s+ns)
     {"nSuccesses" => s, "nFailures" => f, "nErrors" => e, "nNonSuccessful" => ns}
 end
+
+exitWithTestStatus() = exit(getStats()["nNonSuccessful"])
 
 # Assertion helpers
 # =================

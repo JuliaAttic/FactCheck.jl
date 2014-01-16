@@ -2,9 +2,13 @@
 **[Installation](#installation)** |
 **[Usage](#usage)** |
 **[Workflow](#workflow)** |
+**[Travis](#travis)** |
 **[Contributing](#contributing)**
 
 # fact check
+
+[![Build Status](https://travis-ci.org/rened/FactCheck.jl.png)](https://travis-ci.org/rened/FactCheck.jl)
+
 
 [Midje](https://github.com/marick/Midje)-like testing for Julia.
 
@@ -154,6 +158,28 @@ julia> @runtest Stats means variability
 
 # these tests pass silently
 ```
+
+## Travis
+
+If you want to use FactCheck tests on Travis, you can emit the overall result of the tests like this:
+
+```jl
+modlue TestFactCheck
+
+    ### your tests...
+
+    exitstatus()
+
+end # module
+```
+
+This will return `0` if everything went well, or the number of errors + failures otherwise. In your `.travis.yml` add a line like the following:
+
+```
+- julia ~/.julia/YourPackage/test/yourtests.jl
+```
+
+You can then include the Travis built status indicator as usual as featured on the top of this page.
 
 ## Contributing
 

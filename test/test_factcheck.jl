@@ -98,4 +98,7 @@ facts("FactCheck assertion helper functions") do
 
 end
 
+exitstatus()
+
 end # module
+

@@ -69,7 +69,8 @@ end
 ```
 
 The symbol `=>` is used as an assertion more general than `==`.
-Each fact will be transformed into a test, the type of which depends on the value to the right of the `=>`. (We'll call that value the assertion.)
+Each fact will be transformed into a test, the type of which depends on the value to the right of the `=>`.
+(We'll call that value the assertion.)
 
 An assertion can take two forms:
 
@@ -128,9 +129,10 @@ Warning: replacing module TestFactCheck
 
 This workflow has the advantage of not requiring an extra invocation of `julia` on each test run, which would add a few seconds to your testing time.
 
-A convenience macro named `@runtest` is also provided.  The `@runtest` macro takes a package name and any number of valid test files. 
-It expects the test files to be in the `/test` directory and to be appended by `.jl`. It simply `include`s the specified files, which 
-allows multiple calls within a single Julia session.
+A convenience macro named `@runtest` is also provided.
+The `@runtest` macro takes a package name and any number of valid test files.
+It expects the test files to be in the `/test` directory and to be appended by `.jl`.
+It simply `include`s the specified files, which allows multiple calls within a single Julia session.
 
 ```jl
 julia> @runtest FactCheck test_factcheck
@@ -145,15 +147,16 @@ FactCheck assertion helper functions
 24 facts verified.
 ```
 
-The macro also works on tests outside the `FactCheck` framework. 
+The macro also works on tests outside the `FactCheck` framework.
 
 ```jl
-julia> @runtest Stats means variability 
+julia> @runtest Stats means variability
 
 # these tests pass silently
 ```
 
 ## Contributing
 
-I'm incredibly open to contributions. The code base is quite small and (I think) well documented.
+I'm incredibly open to contributions.
+The code base is quite small and (I think) well documented.
 I'm also happy to explain any decisions I've made, with the understanding that they may have been uninformed.

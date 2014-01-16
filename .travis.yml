@@ -1,0 +1,15 @@
+language: cpp
+compiler:
+  - clang
+notifications:
+  email: 
+    - github@donner.at  
+before_install:
+  - sudo add-apt-repository ppa:staticfloat/julia-deps -y
+  - sudo add-apt-repository ppa:staticfloat/julianightlies -y
+  - sudo apt-get update -qq -y
+  - sudo apt-get install libpcre3-dev julia -y
+script:
+#  - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("FactCheck"))`); Pkg.pin("FactCheck"); Pkg.resolve()'
+  - julia -e 'Pkg.clone("git://github.com/rened/FactCheck.jl"); run(`ln -s $(pwd()) $(Pkg.dir("FactCheck"))`); Pkg.pin("FactCheck"); Pkg.resolve()'
+  - julia ~/.julia/FactCheck/test/test_factcheck.jl

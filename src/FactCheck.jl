@@ -5,7 +5,7 @@ export @fact,
        facts,
        context,
        getstats,
-       exitWithTestStatus,
+       exitstatus,
        # assertion helpers
        not,
        truthy,
@@ -351,7 +351,7 @@ function getstats()
     {"nSuccesses" => s, "nFailures" => f, "nErrors" => e, "nNonSuccessful" => ns}
 end
 
-exitWithTestStatus() = exit(getstats()["nNonSuccessful"])
+exitstatus() = exit(getstats()["nNonSuccessful"])
 
 # Assertion helpers
 # =================

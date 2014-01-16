@@ -7,7 +7,7 @@
 
 # fact check
 
-[![Build Status](https://travis-ci.org/rened/FactCheck.jl.png)](https://travis-ci.org/rened/FactCheck.jl)
+[![Build Status](https://travis-ci.org/zachallaun/FactCheck.jl.png)](https://travis-ci.org/zachallaun/FactCheck.jl)
 
 
 [Midje](https://github.com/marick/Midje)-like testing for Julia.

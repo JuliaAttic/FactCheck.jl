@@ -98,6 +98,13 @@ facts("FactCheck assertion helper functions") do
 
 end
 
+facts("Suite Printing") do
+    context("print shows suite name") do
+        suite = FactCheck.TestSuite("testfile.jl", "A Sweet Suite")
+        @fact string(suite) => "A Sweet Suite: (testfile.jl)"
+    end
+end
+
 exitstatus()
 
 end # module

@@ -17,6 +17,10 @@ export @fact,
        roughly, 
        @runtest
 
+# this configuration block isn't exported but is intended to be accessed by
+# users with "FactCheck.config"
+config = {:compact => false}
+
 allresults = {}
 
 # HACK: get the current line number
@@ -67,6 +71,10 @@ type Error <: Result
     backtrace
     meta::Dict
 end
+
+print_compact(io::IO, res::Success) = print(io, green("+"))
+print_compact(io::IO, res::Failure) = print(io, red("-"))
+print_compact(io::IO, res::Error) = print(io, red("E"))
 
 # Taken from Base.Test
 #
@@ -190,10 +198,13 @@ function show(io::IO, suite::TestSuite)
     end
 end
 
-function format_suite(suite::TestSuite)
-    s = suite.desc != nothing ? "$(suite.desc) " : ""
-    s = string(s, suite.filename != nothing ? "($(suite.filename))" : "")
-    bold(string(s, "\n"))
+import Base.print
+function print(io::IO, suite::TestSuite)
+    s = suite.desc != nothing ? "$(suite.desc)" : ""
+    if suite.filename != nothing
+        s = string(s, ": ($(suite.filename))")
+    end
+    print(io, s)
 end
 
 # FactCheck core functions and macros
@@ -224,6 +235,9 @@ function do_fact(thunk::Function, factex::Expr, meta::Dict)
         Error(factex, err, catch_backtrace(), meta)
     end
 
+    if config[:compact]
+        print_compact(STDOUT, result)
+    end
     !isempty(handlers) && handlers[end](result)
     push!(allresults, result)
     result
@@ -320,12 +334,21 @@ function facts(f::Function, desc)
     test_handler = make_handler(suite)
     push!(handlers, test_handler)
 
-    println()
-    println(format_suite(suite))
+    print(suite)
+    if(config[:compact])
+        print(": ")
+    else
+        println()
+    end
 
     f()
 
-    println(suite)
+    if(config[:compact])
+        println()
+    else
+        show(suite)
+        println()
+    end
 
     pop!(handlers)
 end

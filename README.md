@@ -159,6 +159,13 @@ julia> @runtest Stats means variability
 # these tests pass silently
 ```
 
+## Configuration
+
+FactCheck has a configuration dictionary at `FactCheck.config`. Currently the
+only option is `:compact`, which can be `true` or `false` to turn on or off
+more compact output. The default is `false`, so to enable compact output simply
+put `FactCheck.config[:compact] = true` before your tests.
+
 ## Travis
 
 If you want to use FactCheck tests on Travis, you can emit the overall result of the tests like this:

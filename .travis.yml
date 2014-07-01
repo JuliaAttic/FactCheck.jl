@@ -10,6 +10,7 @@ before_install:
   - sudo apt-get update -qq -y
   - sudo apt-get install libpcre3-dev julia -y
 script:
-#  - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("FactCheck"))`); Pkg.pin("FactCheck"); Pkg.resolve()'
-  - julia -e 'Pkg.clone("git://github.com/zachallaun/FactCheck.jl"); run(`ln -s $(pwd()) $(Pkg.dir("FactCheck"))`); Pkg.pin("FactCheck"); Pkg.resolve()'
+  - julia -e 'Pkg.init()'
+  - julia -e 'run(`ln -s $(pwd()) $(Pkg.dir("FactCheck"))`)'
+  - julia -e 'Pkg.pin("FactCheck"); Pkg.resolve()'
   - julia ~/.julia/FactCheck/test/test_factcheck.jl

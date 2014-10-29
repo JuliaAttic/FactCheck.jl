@@ -7,7 +7,7 @@
 
 # fact check
 
-[![Build Status](https://travis-ci.org/zachallaun/FactCheck.jl.png)](https://travis-ci.org/zachallaun/FactCheck.jl)
+[![Build Status](https://travis-ci.org/JuliaLang/FactCheck.jl.png)](https://travis-ci.org/JuliaLang/FactCheck.jl)
 
 
 [Midje](https://github.com/marick/Midje)-like testing for Julia.
@@ -104,7 +104,7 @@ facts("Using helper assertions") do
 end
 ```
 
-These can be found at the bottom of [src/FactCheck.jl](https://github.com/zachallaun/FactCheck.jl/blob/master/src/FactCheck.jl).
+These can be found at the bottom of [src/FactCheck.jl](https://github.com/JuliaLang/FactCheck.jl/blob/master/src/FactCheck.jl).
 
 ## Workflow
 

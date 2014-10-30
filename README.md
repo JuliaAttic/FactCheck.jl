@@ -1,6 +1,6 @@
 # FactCheck.jl
 
-## A test framework for [Julia](http://julialang.org)
+### A test framework for [Julia](http://julialang.org)
 
 [![Build Status](https://travis-ci.org/JuliaLang/FactCheck.jl.png)](https://travis-ci.org/JuliaLang/FactCheck.jl)
 [![Coverage Status](https://img.shields.io/coveralls/JuliaLang/FactCheck.jl.svg)](https://coveralls.io/r/JuliaLang/FactCheck.jl)

@@ -1,30 +1,16 @@
-**[Why?](#why)** |
-**[Installation](#installation)** |
-**[Usage](#usage)** |
-**[Workflow](#workflow)** |
-**[Travis](#travis)** |
-**[Contributing](#contributing)**
+# FactCheck.jl
 
-# fact check
+## A test framework for [Julia](http://julialang.org)
 
 [![Build Status](https://travis-ci.org/JuliaLang/FactCheck.jl.png)](https://travis-ci.org/JuliaLang/FactCheck.jl)
+[![Coverage Status](https://img.shields.io/coveralls/JuliaLang/FactCheck.jl.svg)](https://coveralls.io/r/JuliaLang/FactCheck.jl)
+[![FactCheck](http://pkg.julialang.org/badges/FactCheck_release.svg)](http://pkg.julialang.org/?pkg=FactCheck&ver=release)
 
+`FactCheck.jl` is a [Julia](http://julialang.org) testing framework inspired by the [Midje](https://github.com/marick/Midje) library for Clojure. It aims to add more functionality over the basic [Base.Test](http://docs.julialang.org/en/latest/stdlib/test/).
 
-[Midje](https://github.com/marick/Midje)-like testing for Julia.
+*MIT Licensed*
 
-![Example output](http://img594.imageshack.us/img594/8189/screenshot20130329at222.png)
-
-## Why?
-
-[Base.Test](https://github.com/JuliaLang/julia/blob/master/base/test.jl) seemed to be the only option in the way of Julia testing, and I wasn't a huge fan.
-Midje is a simple and powerful testing framework written for Clojure, and so I sought to (at least partially) recreate it.
-This is a work in progress.
-
-## Installation
-
-```jl
-julia> Pkg.add("FactCheck")
-```
+**Installation**: `julia> Pkg.add("FactCheck")`
 
 ## Usage
 
@@ -164,7 +150,7 @@ julia> @runtest Stats means variability
 If you want to use FactCheck tests on Travis, you can emit the overall result of the tests like this:
 
 ```jl
-modlue TestFactCheck
+module TestFactCheck
 
     ### your tests...
 
@@ -181,8 +167,3 @@ This will return `0` if everything went well, or the number of errors + failures
 
 You can then include the Travis built status indicator as usual as featured on the top of this page.
 
-## Contributing
-
-I'm incredibly open to contributions.
-The code base is quite small and (I think) well documented.
-I'm also happy to explain any decisions I've made, with the understanding that they may have been uninformed.

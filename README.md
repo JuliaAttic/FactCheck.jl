@@ -18,7 +18,10 @@
 using FactCheck
 ```
 
-**Note**: `FactCheck` has colored output, but only if you run Julia with the `--color` option, e.g. `julia --color test/runtests.jl`.
+**Note**: `FactCheck` has colored output, but only if you run Julia with the `--color` option, e.g. 
+```bash
+julia --color test/runtests.jl
+```
 
 The top-level function `facts` describes the scope of your tests and does the setup required by the test runner.
 It can be called with or without a description:

@@ -16,8 +16,7 @@ export @fact,
        anything,
        irrelevant,
        exactly,
-       roughly, 
-       @runtest
+       roughly
 
 allresults = {}
 
@@ -326,23 +325,23 @@ function getstats()
     s = 0
     f = 0
     e = 0
-    ns = 0
     for r in allresults
         if isa(r, Success)
             s += 1
         elseif isa(r, Failure)
             f += 1
-            ns += 1
         elseif isa(r, Error)
             e += 1
-            ns += 1
         end
     end
-    assert(s+f+e == length(allresults) == s+ns)
-    {"nSuccesses" => s, "nFailures" => f, "nErrors" => e, "nNonSuccessful" => ns}
+    assert(s+f+e == length(allresults))
+    {"nSuccesses" => s, "nFailures" => f, "nErrors" => e, "nNonSuccessful" => f+e}
 end
 
-exitstatus() = exit(getstats()["nNonSuccessful"])
+function exitstatus()
+    ns = getstats()["nNonSuccessful"]
+    ns > 0 && error("FactCheck finished with $ns non-successful tests.")
+end
 
 # Assertion helpers
 # =================
@@ -384,10 +383,5 @@ roughly(X::AbstractArray; kvtols...) = Y::AbstractArray -> begin
     return true
 end
 
-macro runtest(pkg, files...)
-  for f in files
-    include(Pkg.dir("$pkg/test/$f.jl"))
-  end
-end
 
 end # module FactCheck

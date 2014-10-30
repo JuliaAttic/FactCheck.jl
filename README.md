@@ -94,78 +94,26 @@ end
 
 These can be found at the bottom of [src/FactCheck.jl](https://github.com/JuliaLang/FactCheck.jl/blob/master/src/FactCheck.jl).
 
+### Exit status
+
+When a program ends it returns an [exit status](http://en.wikipedia.org/wiki/Exit_status). This is used by other programs to figure out how a program ended. For example, [Travis CI](https://travis-ci.org/) looks at Julia exit code to determine if your tests passed or failed. Because `FactCheck` catches all the test errors, it will return `0` even if a test fails. To address this you can use `exitstatus()` at the end of your tests. This will throw a error, so Julia terminates in an error state.
+
+```jl
+module MyPkgTests
+    using FactCheck
+    # Your tests...
+    FactCheck.exitstatus()
+end
+```
+
 ## Workflow
 
-First, make sure your tests are inside of a module.
+You can run your tests simply by calling them from the command line, e.g. `julia --color test/runtests.jl`, but another option is to play your tests in a module, e.g.
 
 ```jl
-module TestFactCheck
-
-# assertions live here
-
-end # module
+module MyPkgTests
+    # Your tests...
+end
 ```
 
-Then you can simply `reload` your test file repeatedly inside of a Julia REPL.
-Because the tests are in a module, you won't run into constant-redefinition errors if you create constants (like types or immutables) inside of your tests.
-(Julia allows you to repeatedly replace a module inside a single process, but you cannot replace constants.)
-
-```jl
-julia> reload("test_factcheck")
-# Output summary...
-
-julia> reload("test_factcheck")
-Warning: replacing module TestFactCheck
-# Output summary...
-```
-
-This workflow has the advantage of not requiring an extra invocation of `julia` on each test run, which would add a few seconds to your testing time.
-
-A convenience macro named `@runtest` is also provided.
-The `@runtest` macro takes a package name and any number of valid test files.
-It expects the test files to be in the `/test` directory and to be appended by `.jl`.
-It simply `include`s the specified files, which allows multiple calls within a single Julia session.
-
-```jl
-julia> @runtest FactCheck test_factcheck
-
-FactCheck core functions
-
-9 facts verified.
-
-
-FactCheck assertion helper functions
-
-24 facts verified.
-```
-
-The macro also works on tests outside the `FactCheck` framework.
-
-```jl
-julia> @runtest Stats means variability
-
-# these tests pass silently
-```
-
-## Travis
-
-If you want to use FactCheck tests on Travis, you can emit the overall result of the tests like this:
-
-```jl
-module TestFactCheck
-
-    ### your tests...
-
-    exitstatus()
-
-end # module
-```
-
-This will return `0` if everything went well, or the number of errors + failures otherwise. In your `.travis.yml` add a line like the following:
-
-```
-- julia ~/.julia/YourPackage/test/yourtests.jl
-```
-
-You can then include the Travis built status indicator as usual as featured on the top of this page.
-
+then repeatedly reload your tests using `reload`, e.g. `julia> reload("test/runtests")`

@@ -2,14 +2,16 @@ language: cpp
 compiler:
   - clang
 notifications:
-  email:
-    - zach.allaun+travis@gmail.com
+  email: false
+env:
+  matrix:
+    - JULIAVERSION="juliareleases"
+    - JULIAVERSION="julianightlies"
 before_install:
   - sudo add-apt-repository ppa:staticfloat/julia-deps -y
-  - sudo add-apt-repository ppa:staticfloat/julianightlies -y
+  - sudo add-apt-repository ppa:staticfloat/${JULIAVERSION} -y
   - sudo apt-get update -qq -y
   - sudo apt-get install libpcre3-dev julia -y
+  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 script:
-#  - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("FactCheck"))`); Pkg.pin("FactCheck"); Pkg.resolve()'
-  - julia -e 'Pkg.clone("git://github.com/zachallaun/FactCheck.jl"); run(`ln -s $(pwd()) $(Pkg.dir("FactCheck"))`); Pkg.pin("FactCheck"); Pkg.resolve()'
-  - julia ~/.julia/FactCheck/test/test_factcheck.jl
+  - julia -e 'Pkg.init(); Pkg.clone(pwd()); Pkg.test("FactCheck")'

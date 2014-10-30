@@ -1,3 +1,5 @@
+# FactCheck.jl
+
 module FactCheck
 
 export @fact,
@@ -47,9 +49,11 @@ function getline()
     end
 end
 
-# Represents the result of a test. The `meta` dictionary is used to retain
-# information about the test, such as its file, line number, description, etc.
-#
+
+# Represents the result of a test. These are similar to the types with the
+# same names in Base.Test, except for the addition of the `meta` dictionary
+# that is used to retain information about the test, such as its file, 
+# line number, description, etc.
 abstract Result
 type Success <: Result
     expr::Expr
@@ -81,16 +85,15 @@ end
 #     # ...
 #     rethrow(err)
 #
-import Base.showerror
-function showerror(io::IO, r::Error, backtrace)
-    println(io, "Test error: $(r.expr)")
-    showerror(io, r.err, r.backtrace)
-end
-showerror(io::IO, r::Error) = showerror(io, r, {})
+#import Base.showerror
+#function showerror(io::IO, r::Error, backtrace)
+#    println(io, "Test error: $(r.expr)")
+#    showerror(io, r.err, r.backtrace)
+#end
+#showerror(io::IO, r::Error) = showerror(io, r, {})
 
 # A TestSuite collects the results of a series of tests, as well as some
 # information about the tests such as their file and description.
-#
 type TestSuite
     filename
     desc
@@ -98,22 +101,7 @@ type TestSuite
     failures::Array{Failure}
     errors::Array{Error}
 end
-function TestSuite(filename, desc)
-    TestSuite(filename, desc, Success[], Failure[], Error[])
-end
-
-# Display
-# =======
-
-const RED     = "\x1b[31m"
-const GREEN   = "\x1b[32m"
-const BOLD    = "\x1b[1m"
-const DEFAULT = "\x1b[0m"
-
-colored(s::String, color) = string(color, s, DEFAULT)
-red(s::String)   = colored(s, RED)
-green(s::String) = colored(s, GREEN)
-bold(s::String)  = colored(s, BOLD) # Bold is a color. Shut up.
+TestSuite(filename, desc) =TestSuite(filename, desc, Success[], Failure[], Error[])
 
 pluralize(s::String, n::Number) = n == 1 ? s : string(s, "s")
 
@@ -158,42 +146,44 @@ format_value(r::Failure, s::String) = "$s :: got $(repr(r.val))"
 import Base.show
 
 function show(io::IO, f::Failure)
-    formatted = "$(red("Failure"))"
-    formatted = format_line(f, formatted)
+    print_with_color(:red, io, "Failure")
+    formatted = format_line(f, "")
     formatted = format_value(f, formatted)
     println(io, formatted)
     println(io, format_assertion(f.expr))
 end
 
 function show(io::IO, e::Error)
-    formatted = "$(red("Error"))"
-    formatted = format_line(e, formatted)
+    print_with_color(:red, io, "Error")
+    formatted = format_line(e, "")
     println(io, formatted)
     showerror(STDOUT, e)
     println(io)
 end
 
 function show(io::IO, s::Success)
-    formatted = "$(green("Success")) :: $(format_assertion(s.expr))"
+    print_with_color(:green, io, "Success")
+    formatted = " :: $(format_assertion(s.expr))"
     print(io, formatted)
 end
 
 function show(io::IO, suite::TestSuite)
     if length(suite.failures) == 0 && length(suite.errors) == 0
-        println(io, green("$(length(suite.successes)) $(pluralize("fact", length(suite.successes))) verified."))
+        print_with_color(:green, io, "$(length(suite.successes)) $(pluralize("fact", length(suite.successes))) verified.\n")
     else
         total = length(suite.successes) + length(suite.failures) + length(suite.errors)
         println(io, "Out of $total total $(pluralize("fact", total)):")
-        println(io, green("  Verified: $(length(suite.successes))"))
-        println(io,   red("  Failed:   $(length(suite.failures))"))
-        println(io,   red("  Errored:  $(length(suite.errors))"))
+        print_with_color(:green, io, "  Verified: $(length(suite.successes))\n")
+        print_with_color(:red,   io, "  Failed:   $(length(suite.failures))\n")
+        print_with_color(:red,   io, "  Errored:  $(length(suite.errors))\n")
     end
 end
 
 function format_suite(suite::TestSuite)
     s = suite.desc != nothing ? "$(suite.desc) " : ""
     s = string(s, suite.filename != nothing ? "($(suite.filename))" : "")
-    bold(string(s, "\n"))
+    #bold(string(s, "\n"))
+    string(s, "\n")
 end
 
 # FactCheck core functions and macros

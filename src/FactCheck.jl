@@ -8,13 +8,12 @@ export @fact,
        context,
        getstats,
        exitstatus,
-       # assertion helpers
+       # Assertion helpers
        not,
+       anything
        truthy,
        falsey,
        falsy,
-       anything,
-       irrelevant,
        exactly,
        roughly
 
@@ -198,6 +197,7 @@ const handlers = Function[]
 #
 const contexts = String[]
 
+
 # `do_fact` constructs a Success, Failure, or Error depending on the outcome
 # of a test and passes it off to the active test handler (`FactCheck.handlers[end]`).
 #
@@ -218,6 +218,8 @@ function do_fact(thunk::Function, factex::Expr, meta::Dict)
     result
 end
 
+
+
 # Constructs a boolean expression from a given expression `ex` that, when
 # evaluated, returns true if `ex` throws an error and false if `ex` does not.
 #
@@ -229,6 +231,7 @@ throws_pred(ex) = quote
         (true, "error")
     end
 end
+
 
 # Constructs a boolean expression from two values that works differently
 # depending on what `assertion` evaluates to.
@@ -247,6 +250,7 @@ function fact_pred(ex, assertion)
     end
 end
 
+
 # `@fact` rewrites assertions and generates calls to `do_fact`, which
 # is responsible for actually running the test.
 #
@@ -254,14 +258,16 @@ end
 #     #=> do_fact( () -> 1 == 1, :(1 => 1), ...)
 #
 macro fact(factex::Expr)
-    if factex.head == :(=>)
-        :(do_fact(() -> $(fact_pred(factex.args...)),
-                  $(Expr(:quote, factex)),
-                  {"line" => getline()}))
-    else
-        error("@fact doesn't support expression: $factex")
-    end
+    factex.head != :(=>) && error("Incorrect usage of @fact: $factex")
+    :(do_fact(  () -> $(fact_pred(factex.args...)),
+                $(Expr(:quote, factex)),
+                ["line" => getline()]) )
 end
+
+
+
+
+
 
 macro fact_throws(factex::Expr)
     :(do_fact(() -> $(throws_pred(factex)),
@@ -296,6 +302,8 @@ function context(f::Function, desc)
     pop!(contexts)
 end
 context(f::Function) = f()
+
+
 
 # `facts` creates test scope. It is responsible for setting up a testing
 # environment, which means constructing a `TestSuite`, generating and
@@ -343,32 +351,33 @@ function exitstatus()
     ns > 0 && error("FactCheck finished with $ns non-successful tests.")
 end
 
+
+#----------------------------------------------------------------------
 # Assertion helpers
-# =================
+# - not
+# - anything
+# - truthy, falsey, falsy
+# - exactly
+# - roughly
 
-# Logical not for values and functions.
-not(x) = isa(x, Function) ? (y) -> !x(y) : (y) -> x != y
+# not: logical not for values and functions
+not(x) = isa(x, Function) ? (y) -> !x(y) :
+                            (y) -> x != y
 
-# Truthiness is defined as not `nothing` or `false` (which is 0).
-# Falsiness is its opposite.
-#
-truthy(x) = nothing != x != false
-falsey = falsy = not(truthy)
+# anything: anything but nothing
+anything(x) = (x != nothing)
 
-irrelevant = anything(x) = true
+# truthy: not `nothing`, false (== 0)
+# falsy/falsey: not truthy
+truthy(x) = (x != nothing) && (x != false)
+falsey(x) = not(truthy(x))
+falsy = falsey
 
-# Can be used to test object/function equality:
-#
-#     @fact iseven => exactly(iseven)
-#
+# exactly: tests object/function equality (i.e. ===)
 exactly(x) = (y) -> is(x, y)
 
-# Useful for comparing floating point numbers:
-#
-#     @fact 4.99999 => roughly(5)
-#
-
-roughly(n::Number; kvtols...) = i::Number -> isapprox(i,n; kvtols...)
+# approx/roughly: Comparing numbers approximately
+roughly(x::Number; kvtols...) = (y::Number) -> isapprox(y, x; kvtols...)
 
 roughly(X::AbstractArray; kvtols...) = Y::AbstractArray -> begin
     if size(X) != size(Y)

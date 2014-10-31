@@ -12,16 +12,82 @@
 
 **Installation**: `julia> Pkg.add("FactCheck")`
 
-## Usage
+## Documentation
 
-```jl
+To get started with `FactCheck`, simply place `using FactCheck` at the top of your test files.
+
+> Note: `FactCheck` produces colored output, but only if you run Julia with the `--color` option, e.g. `julia --color test/runtests.jl`
+
+### Basics
+
+You can use `FactCheck` to do basic assertions like you would with `Base.Test`, e.g.
+
+```julia
 using FactCheck
+
+@fact 1 => 1
+@fact 2*2 => 4
+@fact uppercase("foo") => "FOO"
+@fact_throws 2^-1
+@fact 2*[1,2,3] => [2,4,6]
 ```
 
-**Note**: `FactCheck` has colored output, but only if you run Julia with the `--color` option, e.g. 
-```bash
-julia --color test/runtests.jl
+A `FactCheck` `=>` is more general than the `==` of `Base.Test.@test`.
+We refer to the value to the left of the `=>` as the *expression*, and the value to the right of as the *assertion*.
+If the assertion is a literal value, like `1`, `"FOO"`, or `[2,4,6]`, then `@fact` checks if the expression is equal to the assertion.
+However if the assertion is a *function*, then function will be applied to the expression, e.g.
+```julia
+@fact 2 => iseven
+#...is equivalent to...
+@fact iseven(2) => true
+
+@fact Int[] => isempty
+#..is equivalent to...
+@fact isempy(Int[]) => true
 ```
+
+`FactCheck` provides several helper functions to make more complicated assertions:
+
+#### `not`
+Logical not for literal values and functions.
+
+```julia
+@fact 1 => not(2)
+# is equivalent to
+@fact (1 != 2) => true
+
+@fact 1 => not(iseven)
+# is equivalent to
+@fact !iseven(1) => true
+```
+
+#### `anything`
+Anything but `nothing`.
+
+```julia
+@fact sin(π) => anything
+```
+
+#### `truthy`, `falsey`, `falsey`
+To be truthy is to be not `nothing`, false, or 0. To be falsy (or falsey) is to be not truthy.
+```julia
+@fact 1 => truthy
+@fact nothing => falsey
+```
+
+#### `exactly`
+Test equality in the same way that `Base.is`/`Base.===` do. For example, two distinct objects with the same values are not `exactly` the same e.g.
+```
+a = [1,2,3]
+b = [1,2,3]
+@fact a => b
+@fact a => not(exactly(b))
+```
+
+#### `approx`/`roughly`
+Test approximate equality of numbers.
+```
+
 
 The top-level function `facts` describes the scope of your tests and does the setup required by the test runner.
 It can be called with or without a description:
@@ -33,19 +99,6 @@ end
 
 facts() do
     # ...
-end
-```
-
-Inside of the function passed to `facts`, a fact can be asserted using the `@fact` macro, or `@fact_throws` if you're asserting a thrown exception.
-
-```jl
-facts("Simple facts") do
-
-    # expression => assertion
-    @fact 1 => 1
-
-    @fact_throws error()
-
 end
 ```
 
@@ -62,40 +115,6 @@ facts("Simple facts") do
 
 end
 ```
-
-The symbol `=>` is used as an assertion more general than `==`.
-Each fact will be transformed into a test, the type of which depends on the value to the right of the `=>`.
-(We'll call that value the assertion.)
-
-An assertion can take two forms:
-
-```jl
-# If the assertion is a function, it will be called on the expression
-# to determine whether or not the fact holds.
-@fact 2 => iseven
-
-# Otherwise, the fact holds if the expression is `==` to the assertion.
-@fact [1,2,3] => [1,2,3]
-```
-
-As the function-assertion form is rather convenient and reads nicely, a number of helper assertion functions are provided.
-
-```jl
-facts("Using helper assertions") do
-
-    context("some helpers operate on values") do
-        @fact false => anything
-        @fact 1 => not(2)
-    end
-
-    context("... or on functions") do
-        @fact 2 => not(isodd)
-    end
-
-end
-```
-
-These can be found at the bottom of [src/FactCheck.jl](https://github.com/JuliaLang/FactCheck.jl/blob/master/src/FactCheck.jl).
 
 ### Exit status
 

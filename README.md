@@ -87,7 +87,9 @@ b = [1,2,3]
 #### `approx`/`roughly`
 Test approximate equality of numbers.
 ```
+```
 
+### Grouping tests
 
 The top-level function `facts` describes the scope of your tests and does the setup required by the test runner.
 It can be called with or without a description:

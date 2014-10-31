@@ -10,7 +10,7 @@ export @fact,
        exitstatus,
        # Assertion helpers
        not,
-       anything
+       anything,
        truthy,
        falsey,
        falsy,

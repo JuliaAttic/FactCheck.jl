@@ -64,10 +64,8 @@ facts("FactCheck assertion helper functions") do
         @fact truthy(0)       => false
     end
 
-    context("`anything` and `irrelevant` are always true") do
-        @fact anything => exactly(irrelevant)
+    context("`anything` is always true") do
         @fact anything(false)   => true
-        @fact irrelevant(false) => true
     end
 
     context("`exactly` can be used to check object equality") do

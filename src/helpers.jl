@@ -1,6 +1,7 @@
 ############################################################
 # FactCheck.jl
 # A testing framework for Julia
+# http://github.com/JuliaLang/FactCheck.jl
 # MIT Licensed
 ############################################################
 # Assertion helpers

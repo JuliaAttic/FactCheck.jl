@@ -1,17 +1,15 @@
-############################################################
+######################################################################
 # FactCheck.jl
 # A testing framework for Julia
+# http://github.com/JuliaLang/FactCheck.jl
 # MIT Licensed
-############################################################
+######################################################################
 
 module FactCheck
 
-export @fact,
-       @fact_throws,
-       facts,
-       context,
-       getstats,
-       exitstatus,
+export @fact, @fact_throws,
+       facts, context,
+       getstats, exitstatus,
        # Assertion helpers
        not,
        anything,
@@ -19,41 +17,12 @@ export @fact,
        exactly,
        roughly
 
-allresults = {}
-
-# HACK: get the current line number
-#
-# This only works inside of a function body:
-#
-#     julia> hmm = function()
-#                2
-#                3
-#                getline()
-#            end
-#
-#     julia> hmm()
-#     4
-#
-function getline()
-    bt = backtrace()
-    issecond = false
-    for frame in bt
-        lookup = ccall(:jl_lookup_code_address, Any, (Ptr{Void}, Int32), frame, 0)
-        if lookup != ()
-            if issecond
-                return lookup[3]
-            else
-                issecond = true
-            end
-        end
-    end
-end
-
-
-# Represents the result of a test. These are similar to the types with the
-# same names in Base.Test, except for the addition of the `meta` dictionary
-# that is used to retain information about the test, such as its file, 
-# line number, description, etc.
+######################################################################
+# Success, Failure, Error <: Result
+# Represents the result of a test. These are very similar to the types 
+# with the same names in Base.Test, except for the addition of the
+# `meta` dictionary that is used to retain information about the test,
+# such as its file, line number, description, etc.
 abstract Result
 type Success <: Result
     expr::Expr
@@ -72,133 +41,44 @@ type Error <: Result
     meta::Dict
 end
 
-# Taken from Base.Test
-#
-# Allows Errors to be passed to `rethrow`:
-#
-#     try
-#         # ...
-#     catch e
-#         err = Error(expr, e, catch_backtrace(), Dict())
-#     end
-#
-#     # ...
-#     rethrow(err)
-#
-#import Base.showerror
-#function showerror(io::IO, r::Error, backtrace)
-#    println(io, "Test error: $(r.expr)")
-#    showerror(io, r.err, r.backtrace)
-#end
-#showerror(io::IO, r::Error) = showerror(io, r, {})
+# Collection of all results across facts
+allresults = Result[]
 
-# A TestSuite collects the results of a series of tests, as well as some
-# information about the tests such as their file and description.
-type TestSuite
-    filename
-    desc
-    successes::Array{Success}
-    failures::Array{Failure}
-    errors::Array{Error}
-end
-TestSuite(filename, desc) =TestSuite(filename, desc, Success[], Failure[], Error[])
-
-pluralize(s::String, n::Number) = n == 1 ? s : string(s, "s")
-
-# Formats a FactCheck assertion (e.g. `fn(1) => 2`)
-#
-#     format_assertion(:(fn(1) => 2))
-#     # => ":(fn(1)) => 2"
-#
+# Formats a FactCheck assertion
+# e.g. :(fn(1) => 2) to  `fn(1) => 2`
 function format_assertion(ex::Expr)
     x, y = ex.args
     "$(repr(x)) => $(repr(y))"
 end
 
-# Appends a line annotation to a string if the given Result has line information
-# in its `meta` dictionary.
-#
-#     format_line(Success(:(1 => 1), Dict()), "Success")
-#     # => "Success :: "
-#
-#     format_line(Success(:(1 => 1), {"line" => line_annotation}), "Success")
-#     # => "Success (line:10) :: "
-#
-function format_line(r::Result, s::String)
-    formatted = haskey(r.meta, "line") ? "$s :: (line:$(r.meta["line"]))" : s
-    string(formatted, isempty(contexts) ? "" : " :: $(contexts[end])")
+# Builds string with line and context annotations, if available
+format_line(r::Result) = string(
+    haskey(r.meta, "line") ? " :: (line:$(r.meta["line"]))" : "",
+    isempty(contexts) ? "" : " :: $(contexts[end])")
+
+# Define printing functions for the result types
+function Base.show(io::IO, f::Failure)
+    indent = isempty(handlers) ? "" : "  "
+    print_with_color(:red, io, indent, "Failure")
+    println(io, indent, format_line(f), " :: got ", f.val)
+    println(io, indent^2, format_assertion(f.expr))
 end
-
-format_value(r::Failure, s::String) = "$s :: got $(repr(r.val))"
-
-# Implementing Base.show(io::IO, t::SomeType) gives you control over the
-# printed representation of that type. For example:
-#
-#     type Foo
-#     a
-#     end
-#
-#     show(io::IO, f::Foo) = print("Foo: a=$(repr(f.a))")
-#
-#     print(Foo("attr"))
-#     # prints Foo: a="attr"
-#
-import Base.show
-
-function show(io::IO, f::Failure)
-    print_with_color(:red, io, "Failure")
-    formatted = format_line(f, "")
-    formatted = format_value(f, formatted)
-    println(io, formatted)
-    println(io, format_assertion(f.expr))
-end
-
-function show(io::IO, e::Error)
-    print_with_color(:red, io, "Error")
-    formatted = format_line(e, "")
-    println(io, formatted)
-    showerror(STDOUT, e)
+function Base.show(io::IO, e::Error)
+    indent = isempty(handlers) ? "" : "  "
+    print_with_color(:red, io, indent, "Error")
+    println(io, indent, format_line(e))
+    println(io, indent^2, format_assertion(e.expr))
+    Base.showerror(io, e.err, e.backtrace)
     println(io)
 end
-
-function show(io::IO, s::Success)
-    print_with_color(:green, io, "Success")
-    formatted = " :: $(format_assertion(s.expr))"
-    print(io, formatted)
+function Base.show(io::IO, s::Success)
+    indent = isempty(handlers) ? "" : "  "
+    print_with_color(:green, io, indent, "Success")
+    println(io, " :: $(format_assertion(s.expr))")
 end
 
-function show(io::IO, suite::TestSuite)
-    if length(suite.failures) == 0 && length(suite.errors) == 0
-        print_with_color(:green, io, "$(length(suite.successes)) $(pluralize("fact", length(suite.successes))) verified.\n")
-    else
-        total = length(suite.successes) + length(suite.failures) + length(suite.errors)
-        println(io, "Out of $total total $(pluralize("fact", total)):")
-        print_with_color(:green, io, "  Verified: $(length(suite.successes))\n")
-        print_with_color(:red,   io, "  Failed:   $(length(suite.failures))\n")
-        print_with_color(:red,   io, "  Errored:  $(length(suite.errors))\n")
-    end
-end
-
-function format_suite(suite::TestSuite)
-    s = suite.desc != nothing ? "$(suite.desc) " : ""
-    s = string(s, suite.filename != nothing ? "($(suite.filename))" : "")
-    #bold(string(s, "\n"))
-    string(s, "\n")
-end
-
-# FactCheck core functions and macros
-# ========================================
-
-# The last handler function found in `handlers` will be passed test results.
-# This means the default handler set up by FactCheck could be overridden with
-# `push!(FactCheck.handlers, my_custom_handler)`.
-#
-const handlers = Function[]
-
-# A list of test contexts. `contexts[end]` should be the inner-most context.
-#
-const contexts = String[]
-
+######################################################################
+# Core testing macros and functions
 
 # `do_fact` constructs a Success, Failure, or Error depending on the outcome
 # of a test and passes it off to the active test handler (`FactCheck.handlers[end]`).
@@ -267,38 +147,97 @@ macro fact(factex::Expr)
 end
 
 
-
-
-
-
 macro fact_throws(factex::Expr)
     :(do_fact(() -> $(throws_pred(factex)),
               $(Expr(:quote, factex)),
               {"line" => getline()}))
 end
 
+
+######################################################################
+# Grouping of tests
+#
+# `facts` describes a top-level test scope, which can contain
+# `contexts` to group similar tests. Test results will be collected
+# instead of throwing an exception immediately.
+
+# A TestSuite collects the results of a series of tests, as well as
+# some information about the tests such as their file and description.
+type TestSuite
+    filename
+    desc
+    successes::Array{Success}
+    failures::Array{Failure}
+    errors::Array{Error}
+end
+TestSuite(f, d) = TestSuite(f, d, Success[], Failure[], Error[])
+
+function Base.print(io::IO, suite::TestSuite)
+    n_succ = length(suite.successes)
+    n_fail = length(suite.failures)
+    n_err  = length(suite.errors)
+    if n_fail == 0 && n_err == 0
+        print_with_color(:green, io, "$n_succ $(pluralize("fact", n_succ)) verified.\n")
+    else
+        total = n_succ + n_fail + n_err
+        println(io, "Out of $total total $(pluralize("fact", total)):")
+        print_with_color(:green, io, "  Verified: $n_succ\n")
+        print_with_color(:red,   io, "  Failed:   $n_fail\n")
+        print_with_color(:red,   io, "  Errored:  $n_err\n")
+    end
+end
+
+function print_header(suite::TestSuite)
+    print_with_color(:bold, 
+        suite.desc     != nothing ? "$(suite.desc) " : "", 
+        suite.filename != nothing ? "($(suite.filename))" : "", "\n")
+end
+
+# The last handler function found in `handlers` will be passed
+# test results.
+const handlers = Function[]
+
+# A list of test contexts. `contexts[end]` should be the 
+# inner-most context.
+const contexts = String[]
+
 # Constructs a function that handles Successes, Failures, and Errors,
 # pushing them into a given TestSuite and printing Failures and Errors
 # as they arrive.
-#
 function make_handler(suite::TestSuite)
     function delayed_handler(r::Success)
         push!(suite.successes, r)
     end
     function delayed_handler(r::Failure)
         push!(suite.failures, r)
-        println(r)
+        print(r)
     end
     function delayed_handler(r::Error)
         push!(suite.errors, r)
-        println(r)
+        print(r)
     end
     delayed_handler
 end
 
-# Executes a battery of tests in some descriptive context.
-#
-function context(f::Function, desc)
+# facts
+# Creates testing scope. It is responsible for setting up a testing
+# environment, which means constructing a `TestSuite`, generating
+# and registering test handlers, and reporting results.
+function facts(f::Function, desc)
+    suite = TestSuite(nothing, desc)
+    handler = make_handler(suite)
+    push!(handlers, handler)
+    print_header(suite)
+    f()
+    print(suite)
+    pop!(handlers)
+end
+facts(f::Function) = facts(f, nothing)
+
+# context
+# Executes a battery of tests in some descriptive context, intended
+# for use inside of facts
+function context(f::Function, desc::String)
     push!(contexts, desc)
     f()
     pop!(contexts)
@@ -306,31 +245,39 @@ end
 context(f::Function) = f()
 
 
+######################################################################
 
-# `facts` creates test scope. It is responsible for setting up a testing
-# environment, which means constructing a `TestSuite`, generating and
-# registering test handlers, and reporting results.
+# HACK: get the current line number
 #
-# `f` should be a function containing `@fact` invocations.
+# This only works inside of a function body:
 #
-facts(f::Function) = facts(f, nothing)
-function facts(f::Function, desc)
-    suite = TestSuite(nothing, desc)
-    test_handler = make_handler(suite)
-    push!(handlers, test_handler)
-
-    println()
-    println(format_suite(suite))
-
-    f()
-
-    println(suite)
-
-    pop!(handlers)
+#     julia> hmm = function()
+#                2
+#                3
+#                getline()
+#            end
+#
+#     julia> hmm()
+#     4
+#
+function getline()
+    bt = backtrace()
+    issecond = false
+    for frame in bt
+        lookup = ccall(:jl_lookup_code_address, Any, (Ptr{Void}, Int32), frame, 0)
+        if lookup != ()
+            if issecond
+                return lookup[3]
+            else
+                issecond = true
+            end
+        end
+    end
 end
 
-# `getstats` return a dictionary with a summary over all tests run
+pluralize(s::String, n::Number) = n == 1 ? s : string(s, "s")
 
+# `getstats` return a dictionary with a summary over all tests run
 function getstats()
     s = 0
     f = 0

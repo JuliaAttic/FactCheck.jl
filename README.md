@@ -131,7 +131,7 @@ module MyPkgTests
 end
 ```
 
-## Workflow
+### Workflow
 
 You can run your tests simply by calling them from the command line, e.g. `julia --color test/runtests.jl`, but another option is to play your tests in a module, e.g.
 

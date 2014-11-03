@@ -1,7 +1,34 @@
+############################################################
+# FactCheck.jl
+# A testing framework for Julia
+# http://github.com/JuliaLang/FactCheck.jl
+# MIT Licensed
+############################################################
+
 module TestFactCheck
 
 using FactCheck
 
+############################################################
+# Test the errors
+println("Testing Result counting and printing, not actual errors!")
+facts("Test error pathways") do
+    a_success = @fact 1 => 1
+    println(a_success)
+    a_failure = @fact 1 => 2
+    a_error   = @fact 2^-1 => 0.5
+end
+stats = getstats()
+FactCheck.clear_results()
+
+facts("Test that correct test results happened") do
+    @fact stats["nSuccesses"] => 1
+    @fact stats["nFailures"] => 1
+    @fact stats["nErrors"] => 1
+    @fact stats["nNonSuccessful"] => 2
+end
+
+############################################################
 # We have to define macros around certain functions that return expressions
 # so that the :escape Exprs inside them are expanded.
 #

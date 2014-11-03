@@ -43,6 +43,7 @@ end
 
 # Collection of all results across facts
 allresults = Result[]
+clear_results() = (global allresults; allresults = Result[])
 
 # Formats a FactCheck assertion
 # e.g. :(fn(1) => 2) to  `fn(1) => 2`

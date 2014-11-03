@@ -144,6 +144,30 @@ module MyPkgTests
 end
 ```
 
+### Options
+
+`FactCheck` currently has one configuration option, for the output style. This can be set with `FactCheck.setstyle(style)`. The default
+is `:default`, and the other option currently is `:compact`. To see the difference, consider the following code:
+
+```julia
+FactCheck.setstyle(:compact)
+facts("Compact vs default") do
+    @fact 1 => 1
+    @fact 2 => 3
+    @fact 3 => 3
+    @fact 4 => 4
+    @fact 5 => 5
+end
+```
+which produces the output
+```
+Compact vs default: .F...
+  Failure   :: (line:274) :: got 2
+    2 => 3
+```
+
+The main difference is that single characters only are emitted as the tests run, with all errors only being displayed at the end.
+
 ### Workflow
 
 You can run your tests simply by calling them from the command line, e.g. `julia --color test/runtests.jl`, but another option is to place your tests in a module, e.g.

@@ -17,6 +17,15 @@ export @fact, @fact_throws,
        exactly,
        roughly
 
+# Global configuration for FactCheck
+CONFIG = [:compact => false]  # Compact output off by default
+# Not exported: sets output style
+function setstyle(style)
+    global CONFIG
+    CONFIG[:compact] = (style == :compact)
+end
+
+
 ######################################################################
 # Success, Failure, Error <: Result
 # Represents the result of a test. These are very similar to the types 
@@ -79,6 +88,11 @@ function Base.show(io::IO, s::Success)
     print(io, " :: $(format_assertion(s.expr))")
 end
 
+# When in compact mode, we simply print a single character
+print_compact(f::Failure) = print_with_color(:red, "F")
+print_compact(e::Error) = print_with_color(:red, "E")
+print_compact(s::Success) = print_with_color(:green, ".")
+
 ######################################################################
 # Core testing macros and functions
 
@@ -135,6 +149,7 @@ function do_fact(thunk::Function, factex::Expr, meta::Dict)
 
     !isempty(handlers) && handlers[end](result)
     push!(allresults, result)
+    CONFIG[:compact] && print_compact(result)
     result
 end
 
@@ -173,8 +188,9 @@ end
 
 function print_header(suite::TestSuite)
     print_with_color(:bold, 
-        suite.desc     != nothing ? "$(suite.desc) " : "", 
-        suite.filename != nothing ? "($(suite.filename))" : "", "\n")
+        suite.desc     != nothing ? "$(suite.desc)" : "", 
+        suite.filename != nothing ? " ($(suite.filename))" : "",
+        CONFIG[:compact] ? ": " : "\n")
 end
 
 # The last handler function found in `handlers` will be passed
@@ -187,18 +203,19 @@ const contexts = String[]
 
 # Constructs a function that handles Successes, Failures, and Errors,
 # pushing them into a given TestSuite and printing Failures and Errors
-# as they arrive.
+# as they arrive (unless in compact mode, in which case we delay
+# printing details until the end).
 function make_handler(suite::TestSuite)
     function delayed_handler(r::Success)
         push!(suite.successes, r)
     end
     function delayed_handler(r::Failure)
         push!(suite.failures, r)
-        println(r)
+        !CONFIG[:compact] && println(r)
     end
     function delayed_handler(r::Error)
         push!(suite.errors, r)
-        println(r)
+        !CONFIG[:compact] && println(r)
     end
     delayed_handler
 end
@@ -213,7 +230,16 @@ function facts(f::Function, desc)
     push!(handlers, handler)
     print_header(suite)
     f()
-    print(suite)
+    if !CONFIG[:compact]
+        # Print out summary of test suite
+        print(suite)
+    else
+        # If in compact mode, we need to display all the
+        # failures we hit along along the way
+        println()  # End line with dots
+        map(println, suite.failures)
+        map(println, suite.errors)
+    end
     pop!(handlers)
 end
 facts(f::Function) = facts(f, nothing)

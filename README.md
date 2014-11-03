@@ -8,7 +8,7 @@
 
 `FactCheck.jl` is a [Julia](http://julialang.org) testing framework inspired by the [Midje](https://github.com/marick/Midje) library for Clojure. It aims to add more functionality over the basic [Base.Test](http://docs.julialang.org/en/latest/stdlib/test/).
 
-*MIT Licensed*
+MIT Licensed - see LICENSE.md
 
 **Installation**: `julia> Pkg.add("FactCheck")`
 
@@ -21,7 +21,6 @@ To get started with `FactCheck`, simply place `using FactCheck` at the top of yo
 ### Basics
 
 You can use `FactCheck` to do basic assertions like you would with `Base.Test`, e.g.
-
 ```julia
 using FactCheck
 
@@ -50,7 +49,6 @@ However if the assertion is a *function*, then function will be applied to the e
 
 #### `not`
 Logical not for literal values and functions.
-
 ```julia
 @fact 1 => not(2)
 # is equivalent to
@@ -63,7 +61,6 @@ Logical not for literal values and functions.
 
 #### `anything`
 Anything but `nothing`.
-
 ```julia
 @fact sin(π) => anything
 ```
@@ -77,7 +74,7 @@ To be truthy is to be not `nothing`, false, or 0. To be falsy (or falsey) is to 
 
 #### `exactly`
 Test equality in the same way that `Base.is`/`Base.===` do. For example, two distinct objects with the same values are not `exactly` the same e.g.
-```
+```julia
 a = [1,2,3]
 b = [1,2,3]
 @fact a => b
@@ -85,16 +82,20 @@ b = [1,2,3]
 ```
 
 #### `approx`/`roughly`
-Test approximate equality of numbers.
-```
+Test approximate equality of numbers and arrays of numbers using `Base.isapprox`, and accepts same keyword arguments as that function.
+```julia
+@fact 2 + 1e-5 => roughly(2.0)
+@fact 9.5 => roughly(10; atol=1.0)
+A = [2.0, 3.0]
+B = (1 + 1e-6)*A
+@fact A => roughly(B)
 ```
 
 ### Grouping tests
 
 The top-level function `facts` describes the scope of your tests and does the setup required by the test runner.
 It can be called with or without a description:
-
-```jl
+```julia
 facts("With a description") do
     # ...
 end

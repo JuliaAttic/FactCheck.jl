@@ -7,7 +7,7 @@
 
 module FactCheck
 
-export @fact, @fact_throws,
+export @fact, @fact_throws, @pending,
        facts, context,
        getstats, exitstatus,
        # Assertion helpers
@@ -49,6 +49,8 @@ type Error <: Result
     backtrace
     meta::Dict
 end
+type Pending <: Result
+end
 
 # Collection of all results across facts
 allresults = Result[]
@@ -87,11 +89,16 @@ function Base.show(io::IO, s::Success)
     print_with_color(:green, io, indent, "Success")
     print(io, " :: $(format_assertion(s.expr))")
 end
+function Base.show(io::IO, p::Pending)
+    indent = isempty(handlers) ? "" : "  "
+    print_with_color(:yellow, io, indent, "Pending")
+end
 
 # When in compact mode, we simply print a single character
 print_compact(f::Failure) = print_with_color(:red, "F")
 print_compact(e::Error) = print_with_color(:red, "E")
 print_compact(s::Success) = print_with_color(:green, ".")
+print_compact(s::Pending) = print_with_color(:yellow, "P")
 
 ######################################################################
 # Core testing macros and functions
@@ -135,7 +142,6 @@ macro fact_throws(factex::Expr, args...)
     end
 end
 
-
 # `do_fact` constructs a Success, Failure, or Error depending on the 
 # outcome of a test and passes it off to the active test handler
 # `FactCheck.handlers[end]`. It finally returns the test result.
@@ -153,6 +159,18 @@ function do_fact(thunk::Function, factex::Expr, meta::Dict)
     result
 end
 
+# `@pending` is a no-op test - it doesn't do anything except record
+# its existance in the final totals of tests "run"
+macro pending(factex::Expr, args...)
+    quote
+        result = Pending()
+        !isempty(handlers) && handlers[end](result)
+        push!(allresults, result)
+        CONFIG[:compact] && print_compact(result)
+        result
+    end
+end
+
 ######################################################################
 # Grouping of tests
 #
@@ -165,24 +183,27 @@ end
 type TestSuite
     filename
     desc
-    successes::Array{Success}
-    failures::Array{Failure}
-    errors::Array{Error}
+    successes::Vector{Success}
+    failures::Vector{Failure}
+    errors::Vector{Error}
+    pending::Vector{Pending}
 end
-TestSuite(f, d) = TestSuite(f, d, Success[], Failure[], Error[])
+TestSuite(f, d) = TestSuite(f, d, Success[], Failure[], Error[], Pending[])
 
 function Base.print(io::IO, suite::TestSuite)
     n_succ = length(suite.successes)
     n_fail = length(suite.failures)
     n_err  = length(suite.errors)
-    if n_fail == 0 && n_err == 0
+    n_pend = length(suite.pending)
+    total  = n_succ + n_fail + n_err + n_pend
+    if n_fail == 0 && n_err == 0 && n_pend == 0
         print_with_color(:green, io, "$n_succ $(pluralize("fact", n_succ)) verified.\n")
     else
-        total = n_succ + n_fail + n_err
         println(io, "Out of $total total $(pluralize("fact", total)):")
-        print_with_color(:green, io, "  Verified: $n_succ\n")
-        print_with_color(:red,   io, "  Failed:   $n_fail\n")
-        print_with_color(:red,   io, "  Errored:  $n_err\n")
+        n_succ > 0 && print_with_color(:green, io, "  Verified: $n_succ\n")
+        n_fail > 0 && print_with_color(:red,   io, "  Failed:   $n_fail\n")
+        n_err  > 0 && print_with_color(:red,   io, "  Errored:  $n_err\n")
+        n_pend > 0 && print_with_color(:yellow,io, "  Pending:  $n_pend\n")
     end
 end
 
@@ -216,6 +237,9 @@ function make_handler(suite::TestSuite)
     function delayed_handler(r::Error)
         push!(suite.errors, r)
         !CONFIG[:compact] && println(r)
+    end
+    function delayed_handler(p::Pending)
+        push!(suite.pending, p)
     end
     delayed_handler
 end
@@ -292,6 +316,7 @@ function getstats()
     s = 0
     f = 0
     e = 0
+    p = 0
     for r in allresults
         if isa(r, Success)
             s += 1
@@ -299,10 +324,13 @@ function getstats()
             f += 1
         elseif isa(r, Error)
             e += 1
+        elseif isa(r, Pending)
+            p += 1
         end
     end
-    assert(s+f+e == length(allresults))
-    {"nSuccesses" => s, "nFailures" => f, "nErrors" => e, "nNonSuccessful" => f+e}
+    assert(s+f+e+p == length(allresults))
+    {"nSuccesses" => s, "nFailures" => f, "nErrors" => e, 
+     "nNonSuccessful" => f+e, "nPending" => p}
 end
 
 function exitstatus()

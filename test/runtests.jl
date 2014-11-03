@@ -21,12 +21,15 @@ facts("Test error pathways") do
     println(a_success)
     a_failure = @fact 1 => 2 "one doesn't equal two!"
     a_error   = @fact 2^-1 => 0.5 "domains are tricky"
+    a_pending = @pending not_really_pending() "sorta pending"
+    println(a_pending)
 end
 stats = getstats()
 FactCheck.clear_results()
 @test stats["nSuccesses"] == 1
 @test stats["nFailures"] == 1
 @test stats["nErrors"] == 1
+@test stats["nPending"] == 1
 @test stats["nNonSuccessful"] == 2
 print_with_color(:blue,"Done, begin actual FactCheck tests\n")
 

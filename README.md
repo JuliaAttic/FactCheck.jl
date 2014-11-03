@@ -52,7 +52,7 @@ facts("Testing basics") do
 end
 ```
 
-You can also provide custom error messages as a second argument, e.g.
+You can provide custom error messages as a second argument, e.g.
 ```julia
 facts("Messages") do
     x = [1, 2, 3, 4]
@@ -68,6 +68,19 @@ produces
   Failure   :: (line:256) :: mismatch at i=1 :: got 1
   Failure   :: (line:256) :: mismatch at i=4 :: got 4
 ...
+```
+
+Finally, if you have an idea for a test you want to implement but haven't yet, you can using `@pending`. `@pending` doesn't attempt to check its assertion, or even evaluate the expression, it simply records that a pending test exists.
+```julia
+facts("Some pending") do
+    @fact 2*3 => 6
+    @pending divide(2,3) => :something
+end
+```
+Some pending
+Out of 2 total facts:
+  Verified: 1
+  Pending:  1
 ```
 
 ### Assertions

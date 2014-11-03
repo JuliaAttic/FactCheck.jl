@@ -12,24 +12,65 @@ MIT Licensed - see LICENSE.md
 
 **Installation**: `julia> Pkg.add("FactCheck")`
 
-## Documentation
-
-To get started with `FactCheck`, simply place `using FactCheck` at the top of your test files.
-
 > Note: `FactCheck` produces colored output, but only if you run Julia with the `--color` option, e.g. `julia --color test/runtests.jl`
 
 ### Basics
 
-You can use `FactCheck` to do basic assertions like you would with `Base.Test`, e.g.
+Tests in `FactCheck` should be placed inside a `facts` block. It can be called with or without a description:
 ```julia
 using FactCheck
 
-@fact 1 => 1
-@fact 2*2 => 4
-@fact uppercase("foo") => "FOO"
-@fact_throws 2^-1
-@fact 2*[1,2,3] => [2,4,6]
+facts("With a description") do
+    # Your tests here
+end
+
+facts() do
+    # Your tests here
+end
 ```
+
+Related facts can also be grouped as a `context` inside a `facts` block:
+```julia
+facts("Lots of tests") do
+    context("First group") do
+        # ...
+    end
+    context("Second group") do
+        # ...
+    end
+end
+```
+
+As for the tests themselves, you can use `FactCheck` to do basic assertions like you would with `Base.Test` using `@fact` and `@fact_throws`:
+```julia
+facts("Testing basics") do
+    @fact 1 => 1
+    @fact 2*2 => 4
+    @fact uppercase("foo") => "FOO"
+    @fact_throws 2^-1
+    @fact 2*[1,2,3] => [2,4,6]
+end
+```
+
+You can also provide custom error messages as a second argument, e.g.
+```julia
+facts("Messages") do
+    x = [1, 2, 3, 4]
+    y = [4, 2, 3, 1]
+    for i in 1:4
+        @fact x[i] => y[i] "mismatch at i=$i"
+    end
+end
+```
+produces
+```
+...
+  Failure   :: (line:256) :: mismatch at i=1 :: got 1
+  Failure   :: (line:256) :: mismatch at i=4 :: got 4
+...
+```
+
+### Assertions
 
 A `FactCheck` `=>` is more general than the `==` of `Base.Test.@test`.
 We refer to the value to the left of the `=>` as the *expression*, and the value to the right of as the *assertion*.
@@ -89,34 +130,6 @@ Test approximate equality of numbers and arrays of numbers using `Base.isapprox`
 A = [2.0, 3.0]
 B = (1 + 1e-6)*A
 @fact A => roughly(B)
-```
-
-### Grouping tests
-
-The top-level function `facts` describes the scope of your tests and does the setup required by the test runner.
-It can be called with or without a description:
-```julia
-facts("With a description") do
-    # ...
-end
-
-facts() do
-    # ...
-end
-```
-
-Related facts can also be grouped inside of a `context`:
-
-```jl
-facts("Simple facts") do
-
-    context("numbers are themselves") do
-        @fact 1 => 1
-        @fact 2 => 2
-        @fact 3 => 3
-    end
-
-end
 ```
 
 ### Exit status

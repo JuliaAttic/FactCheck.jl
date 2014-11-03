@@ -9,3 +9,4 @@
 * Removal of the `irrelevant` assertion helper
 * `exitstatus` no longer actually exits Julia, it just throws an uncaught exception. It maybe deprecated and removed.
 * `@runtest` macro removed, was broken anyway and didn't seem like something that should be in this package.
+* NEW: Custom test messages, e.g. `@fact 1=>2 "two != one"`

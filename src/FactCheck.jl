@@ -49,20 +49,21 @@ clear_results() = (global allresults; allresults = Result[])
 # e.g. :(fn(1) => 2) to  `fn(1) => 2`
 function format_assertion(ex::Expr)
     x, y = ex.args
-    "$(repr(x)) => $(repr(y))"
+    "$x => $y"
 end
 
 # Builds string with line and context annotations, if available
 format_line(r::Result) = string(
-    haskey(r.meta, "line") ? " :: (line:$(r.meta["line"]))" : "",
-    isempty(contexts) ? "" : " :: $(contexts[end])")
+    haskey(r.meta, :line) ? " :: (line:$(r.meta[:line]))" : "",
+    isempty(contexts) ? "" : " :: $(contexts[end])",
+    get(r.meta,:msg,nothing) != nothing ? " :: $(r.meta[:msg])" : "")
 
 # Define printing functions for the result types
 function Base.show(io::IO, f::Failure)
     indent = isempty(handlers) ? "" : "  "
     print_with_color(:red, io, indent, "Failure")
     println(io, indent, format_line(f), " :: got ", f.val)
-    println(io, indent^2, format_assertion(f.expr))
+    print(io, indent^2, format_assertion(f.expr))
 end
 function Base.show(io::IO, e::Error)
     indent = isempty(handlers) ? "" : "  "
@@ -70,24 +71,60 @@ function Base.show(io::IO, e::Error)
     println(io, indent, format_line(e))
     println(io, indent^2, format_assertion(e.expr))
     Base.showerror(io, e.err, e.backtrace)
-    println(io)
+    print(io)
 end
 function Base.show(io::IO, s::Success)
     indent = isempty(handlers) ? "" : "  "
     print_with_color(:green, io, indent, "Success")
-    println(io, " :: $(format_assertion(s.expr))")
+    print(io, " :: $(format_assertion(s.expr))")
 end
 
 ######################################################################
 # Core testing macros and functions
 
-# `do_fact` constructs a Success, Failure, or Error depending on the outcome
-# of a test and passes it off to the active test handler (`FactCheck.handlers[end]`).
-#
-# `thunk` should be a parameterless boolean function representing a test.
-# `factex` should be the Expr from which `thunk` was constructed.
-# `meta` should contain meta information about the test.
-#
+# `@fact` is the workhorse macro. It
+# * takes in the expresion-assertion pair, 
+# * converts it to a function that returns tuple (success, assertval)
+# * processes and stores result of test [do_fact]
+macro fact(factex::Expr, args...)
+    factex.head != :(=>) && error("Incorrect usage of @fact: $factex")
+    expr, assertion = factex.args
+    msg = length(args) > 0 ? args[1] : :nothing
+    quote
+        pred = function(t)
+            e = $(esc(assertion))
+            isa(e, Function) ? (e(t), t) : (e == t, t)
+        end
+        
+        do_fact(() -> pred($(esc(expr))),
+                $(Expr(:quote, factex)),
+                [:line => getline(),
+                 :msg  => $(esc(msg))] )
+    end
+end
+
+# `@fact_throws` is similar to `@fact`, except it only checks if
+# the expression throws an error or not - there is no explict 
+# assertion to compare against.
+macro fact_throws(factex::Expr, args...)
+    msg = length(args) > 0 ? args[1] : :nothing
+    quote
+        do_fact(()  ->  try
+                            $(esc(factex))
+                            (false, "no error")
+                        catch e
+                            (true, "error")
+                        end,
+                $(Expr(:quote, factex)),
+                [:line => getline(),
+                 :msg  => $(esc(msg))] )
+    end
+end
+
+
+# `do_fact` constructs a Success, Failure, or Error depending on the 
+# outcome of a test and passes it off to the active test handler
+# `FactCheck.handlers[end]`. It finally returns the test result.
 function do_fact(thunk::Function, factex::Expr, meta::Dict)
     result = try
         res, val = thunk()
@@ -100,60 +137,6 @@ function do_fact(thunk::Function, factex::Expr, meta::Dict)
     push!(allresults, result)
     result
 end
-
-
-
-# Constructs a boolean expression from a given expression `ex` that, when
-# evaluated, returns true if `ex` throws an error and false if `ex` does not.
-#
-throws_pred(ex) = quote
-    try
-        $(esc(ex))
-        (false, "no error")
-    catch e
-        (true, "error")
-    end
-end
-
-
-# Constructs a boolean expression from two values that works differently
-# depending on what `assertion` evaluates to.
-#
-# If `assertion` evaluates to a function, the result of the expression will be
-# `assertion(ex)`. Otherwise, the result of the expression will be
-# `assertion == ex`.
-#
-function fact_pred(ex, assertion)
-    quote
-        pred = function(t)
-            e = $(esc(assertion))
-            isa(e, Function) ? (e(t), t) : (e == t, t)
-        end
-        pred($(esc(ex)))
-    end
-end
-
-
-# `@fact` rewrites assertions and generates calls to `do_fact`, which
-# is responsible for actually running the test.
-#
-#     macroexpand(:(@fact 1 => 1))
-#     #=> do_fact( () -> 1 == 1, :(1 => 1), ...)
-#
-macro fact(factex::Expr)
-    factex.head != :(=>) && error("Incorrect usage of @fact: $factex")
-    :(do_fact(  () -> $(fact_pred(factex.args...)),
-                $(Expr(:quote, factex)),
-                ["line" => getline()]) )
-end
-
-
-macro fact_throws(factex::Expr)
-    :(do_fact(() -> $(throws_pred(factex)),
-              $(Expr(:quote, factex)),
-              {"line" => getline()}))
-end
-
 
 ######################################################################
 # Grouping of tests
@@ -211,11 +194,11 @@ function make_handler(suite::TestSuite)
     end
     function delayed_handler(r::Failure)
         push!(suite.failures, r)
-        print(r)
+        println(r)
     end
     function delayed_handler(r::Error)
         push!(suite.errors, r)
-        print(r)
+        println(r)
     end
     delayed_handler
 end

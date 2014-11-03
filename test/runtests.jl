@@ -8,65 +8,45 @@
 module TestFactCheck
 
 using FactCheck
+using Base.Test
 
 ############################################################
-# Test the errors
-println("Testing Result counting and printing, not actual errors!")
+# Before we excerse the other various parts of FactCheck,
+# check we actually catch and report errors correctly. This
+# also allows us to test printing code for the Failure and
+# Error cases, which wouldn't be tested otherwise.
+print_with_color(:blue,"Testing Result counting and printing, not actual errors!\n")
 facts("Test error pathways") do
-    a_success = @fact 1 => 1
+    a_success = @fact 1 => 1 "I will never be seen"
     println(a_success)
-    a_failure = @fact 1 => 2
-    a_error   = @fact 2^-1 => 0.5
+    a_failure = @fact 1 => 2 "one doesn't equal two!"
+    a_error   = @fact 2^-1 => 0.5 "domains are tricky"
 end
 stats = getstats()
 FactCheck.clear_results()
-
-facts("Test that correct test results happened") do
-    @fact stats["nSuccesses"] => 1
-    @fact stats["nFailures"] => 1
-    @fact stats["nErrors"] => 1
-    @fact stats["nNonSuccessful"] => 2
-end
+@test stats["nSuccesses"] == 1
+@test stats["nFailures"] == 1
+@test stats["nErrors"] == 1
+@test stats["nNonSuccessful"] == 2
+print_with_color(:blue,"Done, begin actual FactCheck tests\n")
 
 ############################################################
-# We have to define macros around certain functions that return expressions
-# so that the :escape Exprs inside them are expanded.
-#
-# See: https://gist.github.com/zachallaun/5257930
-#
-macro throws_pred(ex) FactCheck.throws_pred(ex) end
-macro fact_pred(x, y) FactCheck.fact_pred(x, y) end
-
+# Begin actual tests
 type Foo a end
 type Bar a end
-==(x::Foo, y::Foo) = x.a == y.a
-
-facts("FactCheck core functions") do
-
-    context("throws_pred is true on error") do
-        @fact @throws_pred(1 + 1)   => (false, "no error")
-        @fact @throws_pred(error()) => (true, "error")
-    end
-
-    context("fact_pred tests equality on values") do
-        @fact @fact_pred(1, 1) => (true, 1)
-        @fact @fact_pred("foo", "foo") => (true, "foo")
-        @fact @fact_pred(Foo(1), Foo(1)) => (x) -> x[1]
-        @fact @fact_pred(Bar(1), Bar(1)) => (x) -> !x[1]
-    end
-
-    context("fact_pred applies Function assertions") do
-        @fact @fact_pred(2, iseven) => (true, 2)
-        @fact @fact_pred(2, isodd)  => (false, 2)
-
-        isone(x) = x == 1
-        @fact @fact_pred(1, isone)  => (true, 1)
-    end
-
-end
-
 type Baz end
 type Bazz a end
+==(x::Foo, y::Foo) = x.a == y.a
+
+facts("Testing core functionality") do
+    @fact 1 => 1
+    @fact 2*2 => 4
+    @fact uppercase("foo") => "FOO"
+    @fact_throws 2^-1
+    @fact 2*[1,2,3] => [2,4,6]
+    @fact Foo(1) => Foo(1)
+end
+
 
 facts("FactCheck assertion helper functions") do
 
@@ -74,11 +54,13 @@ facts("FactCheck assertion helper functions") do
         notone = not(1)
         @fact notone(2) => true
         @fact notone(1) => false
+        @fact 2 => not(1)
 
         noteven = not(iseven)
         @fact noteven(3) => true
         @fact noteven(2) => false
         @fact not(iseven)(2) => false
+        @fact 3 => not(iseven)
     end
 
     context("`truthy` is anything other than nothing or false (which is 0)") do
@@ -108,9 +90,9 @@ facts("FactCheck assertion helper functions") do
     end
 
     context("`roughly` compares numbers... roughly") do
-        @fact 2.4999999999999 => roughly(2.5) #roughly(2.5)(2.4999) => true
-        @fact 9.5 => roughly(10; atol=1.0) #roughly(10, 1)(9.5) => true
-        @fact 10.5 => roughly(10; atol=1.0) #roughly(10, 1)(10.5) => true
+        @fact 2.4999999999999 => roughly(2.5)
+        @fact 9.5 => roughly(10; atol=1.0)
+        @fact 10.5 => roughly(10; atol=1.0)
     end
 
     context("`roughly` compares matrixes... roughly") do

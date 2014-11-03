@@ -2,8 +2,9 @@
 
 ## v0.2.0 (unreleased)
 
-* NEW: Custom test messages, e.g. `@fact 1=>2 "two != one"`
-* NEW: Added a compact mode, enable with `FactCheck.setstyle(:compact)`
+* **NEW**: Custom test messages, e.g. `@fact 1=>2 "two != one"`
+* **NEW**: Added a compact mode, enable with `FactCheck.setstyle(:compact)`
+* **NEW**: Added a `@pending` test type that is a no-op but records its existence.
 * Minimum Julia version bumped to 0.3
 * Colored output handled by Julia itself. To get colored output run with `julia --color`
 * Re-written README. Simpler, explains all features, builds up incrementally to more advanced options.

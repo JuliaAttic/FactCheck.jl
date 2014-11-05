@@ -7,6 +7,8 @@
 
 module FactCheck
 
+using Compat
+
 export @fact, @fact_throws, @pending,
        facts, context,
        getstats, exitstatus,
@@ -18,7 +20,7 @@ export @fact, @fact_throws, @pending,
        roughly
 
 # Global configuration for FactCheck
-CONFIG = [:compact => false]  # Compact output off by default
+CONFIG = @compat Dict(:compact => false)  # Compact output off by default
 # Not exported: sets output style
 function setstyle(style)
     global CONFIG
@@ -116,11 +118,10 @@ macro fact(factex::Expr, args...)
             e = $(esc(assertion))
             isa(e, Function) ? (e(t), t) : (e == t, t)
         end
-        
         do_fact(() -> pred($(esc(expr))),
                 $(Expr(:quote, factex)),
-                [:line => getline(),
-                 :msg  => $(esc(msg))] )
+                 @compat(Dict(:line => getline(),
+                              :msg  => $(esc(msg)))))
     end
 end
 
@@ -137,8 +138,8 @@ macro fact_throws(factex::Expr, args...)
                             (true, "error")
                         end,
                 $(Expr(:quote, factex)),
-                [:line => getline(),
-                 :msg  => $(esc(msg))] )
+                @compat(Dict(:line => getline(),
+                              :msg  => $(esc(msg)))))
     end
 end
 
@@ -220,7 +221,7 @@ const handlers = Function[]
 
 # A list of test contexts. `contexts[end]` should be the 
 # inner-most context.
-const contexts = String[]
+const contexts = AbstractString[]
 
 # Constructs a function that handles Successes, Failures, and Errors,
 # pushing them into a given TestSuite and printing Failures and Errors
@@ -271,7 +272,7 @@ facts(f::Function) = facts(f, nothing)
 # context
 # Executes a battery of tests in some descriptive context, intended
 # for use inside of facts
-function context(f::Function, desc::String)
+function context(f::Function, desc::AbstractString)
     push!(contexts, desc)
     f()
     pop!(contexts)
@@ -309,7 +310,7 @@ function getline()
     end
 end
 
-pluralize(s::String, n::Number) = n == 1 ? s : string(s, "s")
+pluralize(s::AbstractString, n::Number) = n == 1 ? s : string(s, "s")
 
 # `getstats` return a dictionary with a summary over all tests run
 function getstats()
@@ -329,8 +330,8 @@ function getstats()
         end
     end
     assert(s+f+e+p == length(allresults))
-    {"nSuccesses" => s, "nFailures" => f, "nErrors" => e, 
-     "nNonSuccessful" => f+e, "nPending" => p}
+    @compat(Dict{Any,Any}("nSuccesses" => s, "nFailures" => f, "nErrors" => e,
+                          "nNonSuccessful" => f+e, "nPending" => p))
 end
 
 function exitstatus()

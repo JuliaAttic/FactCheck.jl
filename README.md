@@ -119,7 +119,7 @@ Anything but `nothing`.
 @fact sin(π) => anything
 ```
 
-#### `truthy`, `falsey`, `falsey`
+#### `truthy`, `falsy`, `falsey`
 To be truthy is to be not `nothing`, false, or 0. To be falsy (or falsey) is to be not truthy.
 ```julia
 @fact 1 => truthy

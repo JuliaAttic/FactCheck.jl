@@ -4,6 +4,7 @@
 
 * NEW: helper `anyof`: fact passes if expression matches any of the arguments to `anyof`.
 * CHANGE: `roughly` now has a two-argument, no keyword, form where the second argument is taken to be `atol`.
+* CHANGE: `context` didn't really do anything. Now, if not in compact mode, it'll print the context description indented. Gives a nice indication of progress when running a large number of tests inside a facts block.
 
 ## v0.2.0
 

@@ -18,6 +18,8 @@ export @fact, @fact_throws, @pending,
        roughly,
        anyof
 
+const INDENT = "  "
+
 # Global configuration for FactCheck
 CONFIG = [:compact => false]  # Compact output off by default
 # Not exported: sets output style
@@ -72,13 +74,13 @@ format_line(r::Result) = string(
 
 # Define printing functions for the result types
 function Base.show(io::IO, f::Failure)
-    indent = isempty(handlers) ? "" : "  "
+    indent = isempty(handlers) ? "" : INDENT
     print_with_color(:red, io, indent, "Failure")
     println(io, indent, format_line(f), " :: got ", f.val)
     print(io, indent^2, format_assertion(f.expr))
 end
 function Base.show(io::IO, e::Error)
-    indent = isempty(handlers) ? "" : "  "
+    indent = isempty(handlers) ? "" : INDENT
     print_with_color(:red, io, indent, "Error")
     println(io, indent, format_line(e))
     println(io, indent^2, format_assertion(e.expr))
@@ -86,12 +88,12 @@ function Base.show(io::IO, e::Error)
     print(io)
 end
 function Base.show(io::IO, s::Success)
-    indent = isempty(handlers) ? "" : "  "
+    indent = isempty(handlers) ? "" : INDENT
     print_with_color(:green, io, indent, "Success")
     print(io, " :: $(format_assertion(s.expr))")
 end
 function Base.show(io::IO, p::Pending)
-    indent = isempty(handlers) ? "" : "  "
+    indent = isempty(handlers) ? "" : INDENT
     print_with_color(:yellow, io, indent, "Pending")
 end
 
@@ -271,9 +273,10 @@ facts(f::Function) = facts(f, nothing)
 
 # context
 # Executes a battery of tests in some descriptive context, intended
-# for use inside of facts
+# for use inside of `facts`. Displays the string in default mode.
 function context(f::Function, desc::String)
     push!(contexts, desc)
+    !CONFIG[:compact] && println(INDENT, desc)
     f()
     pop!(contexts)
 end

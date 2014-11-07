@@ -15,7 +15,8 @@ export @fact, @fact_throws, @pending,
        anything,
        truthy, falsey, falsy,
        exactly,
-       roughly
+       roughly,
+       anyof
 
 # Global configuration for FactCheck
 CONFIG = [:compact => false]  # Compact output off by default

@@ -10,6 +10,7 @@
 # - truthy, falsey/falsy
 # - exactly
 # - roughly
+# - anyof
 ############################################################
 
 # not: logical not for values and functions
@@ -29,14 +30,23 @@ falsy = falsey
 exactly(x) = (y) -> is(x, y)
 
 # approx/roughly: Comparing numbers approximately
+roughly(x::Number, atol) = (y::Number) -> isapprox(y, x, atol=atol)
 roughly(x::Number; kvtols...) = (y::Number) -> isapprox(y, x; kvtols...)
 
-roughly(A::AbstractArray; kvtols...) = (B::AbstractArray) -> begin
+roughly(A::AbstractArray, atol) = (B::AbstractArray) -> begin
     size(A) != size(B) && return false
     for i in 1:length(A)
-        if !isapprox(A[i], B[i]; kvtols...)
-            return false
-        end
+        !isapprox(A[i], B[i], atol=atol) && return false
     end
     return true
 end
+roughly(A::AbstractArray; kvtols...) = (B::AbstractArray) -> begin
+    size(A) != size(B) && return false
+    for i in 1:length(A)
+        !isapprox(A[i], B[i]; kvtols...) && return false
+    end
+    return true
+end
+
+# anyof: match any of the arguments
+anyof(x...) = y -> any(arg->(y==arg), x)

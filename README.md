@@ -136,13 +136,20 @@ b = [1,2,3]
 ```
 
 #### `approx`/`roughly`
-Test approximate equality of numbers and arrays of numbers using `Base.isapprox`, and accepts same keyword arguments as that function.
+Test approximate equality of numbers and arrays of numbers using `Base.isapprox`, and accepts same keyword arguments as that function. If a second argument is provided, but no keyword, it is treated as `atol`.
 ```julia
 @fact 2 + 1e-5 => roughly(2.0)
 @fact 9.5 => roughly(10; atol=1.0)
 A = [2.0, 3.0]
 B = (1 + 1e-6)*A
 @fact A => roughly(B)
+```
+
+#### `anyof`
+Test equality with any of the arguments to `anyof`
+```julia
+@fact 2+2 => anyof(4, :four, "four")
+@fact 5   => not(anyof(:five, "five"))
 ```
 
 ### Exit status

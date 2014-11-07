@@ -96,6 +96,7 @@ facts("FactCheck assertion helper functions") do
         @fact 2.4999999999999 => roughly(2.5)
         @fact 9.5 => roughly(10; atol=1.0)
         @fact 10.5 => roughly(10; atol=1.0)
+        @fact 10.5 => roughly(10, 1.0)
     end
 
     context("`roughly` compares matrixes... roughly") do
@@ -104,8 +105,13 @@ facts("FactCheck assertion helper functions") do
         Z = [1 1; 2 2]
         @fact X => roughly(Y)
         @fact X => roughly(Z; atol=0.2)
+        @fact X => roughly(Z, 0.2)
     end
 
+    context("`anyof` compares with all arguments") do
+        @fact 2+2 => anyof(4, :four, "four")
+        @fact 5   => not(anyof(:five, "five"))
+    end
 end
 
 exitstatus()

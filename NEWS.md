@@ -1,5 +1,10 @@
 # NEWS
 
+## v0.2.1 (unreleased)
+
+* NEW: helper `anyof`: fact passes if expression matches any of the arguments to `anyof`.
+* CHANGE: `roughly` now has a two-argument, no keyword, form where the second argument is taken to be `atol`.
+
 ## v0.2.0
 
 * NEW: Custom test messages, e.g. `@fact 1=>2 "two != one"`

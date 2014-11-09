@@ -16,7 +16,9 @@ export @fact, @fact_throws, @pending,
        truthy, falsey, falsy,
        exactly,
        roughly,
-       anyof
+       anyof,
+       less_than, less_than_or_equal,
+       greater_than, greater_than_or_equal
 
 const INDENT = "  "
 

@@ -112,6 +112,24 @@ facts("FactCheck assertion helper functions") do
         @fact 2+2 => anyof(4, :four, "four")
         @fact 5   => not(anyof(:five, "five"))
     end
+
+    context("less_than") do
+        @fact 1 => less_than(2)
+    end
+
+    context("less_than_or_equal") do
+        @fact 1 => less_than_or_equal(2)
+        @fact 1 => less_than_or_equal(1)
+    end
+
+    context("greater_than") do
+        @fact 2 => greater_than(1)
+    end
+
+    context("greater_than_or_equal") do
+        @fact 2 => greater_than_or_equal(1)
+        @fact 2 => greater_than_or_equal(2)
+    end
 end
 
 exitstatus()

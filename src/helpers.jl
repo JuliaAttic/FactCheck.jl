@@ -50,3 +50,15 @@ end
 
 # anyof: match any of the arguments
 anyof(x...) = y -> any(arg->(y==arg), x)
+
+# less_than: Comparing two numbers
+less_than(compared) = (compare) -> compare < compared
+
+# less_than_or_equal: Comparing two numbers
+less_than_or_equal(compared) = (compare) -> compare <= compared
+
+# greater_than: Comparing two numbers
+greater_than(compared) = (compare) -> compare > compared
+
+# greater_than_or_equal: Comparing two numbers
+greater_than_or_equal(compared) = (compare) -> compare >= compared

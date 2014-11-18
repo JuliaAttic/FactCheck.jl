@@ -145,6 +145,15 @@ B = (1 + 1e-6)*A
 @fact A => roughly(B)
 ```
 
+#### `less_than`/`less_than_or_equal`/`less_than_or_equal`/`greater_than_or_equal`
+Test "not equal" of two numbers.
+```julia
+@fact 1 => less_than(2)
+@fact 1 => less_than_or_equal(1)
+@fact 2 => greater_than(1)
+@fact 2 => greater_than_or_equal(2)
+```
+
 #### `anyof`
 Test equality with any of the arguments to `anyof`
 ```julia

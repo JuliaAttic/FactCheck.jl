@@ -63,5 +63,9 @@ facts("Assertion helpers") do
     @fact false => anything
     @fact iseven => exactly(iseven)
     @fact 2.499999 => roughly(2.5)
+    @fact 1 => less_than(2)
+    @fact 1 => less_than_or_equal(1)
+    @fact 2 => greater_than(1)
+    @fact 2 => greater_than_or_equal(2)
 
 end

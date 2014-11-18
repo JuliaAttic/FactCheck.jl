@@ -1,5 +1,9 @@
 # NEWS
 
+## v0.2.2
+
+* NEW: helpers `less_than`/`less_than_or_equal`/`less_than_or_equal`/`greater_than_or_equal`
+
 ## v0.2.1
 
 * NEW: helper `anyof`: fact passes if expression matches any of the arguments to `anyof`.

@@ -37,25 +37,37 @@ end
 # Success, Failure, Error <: Result
 # Represents the result of a test. These are very similar to the types
 # with the same names in Base.Test, except for the addition of the
-# `meta` dictionary that is used to retain information about the test,
+# `ResultMetadata` type that is used to retain information about the test,
 # such as its file, line number, description, etc.
 abstract Result
+
+type ResultMetadata
+    line
+    msg
+    ResultMetadata(;line=nothing, msg=nothing) = begin
+        new(line, msg)
+    end
+end
+
 type Success <: Result
     expr::Expr
     val
-    meta::Dict
+    meta::ResultMetadata
 end
+
 type Failure <: Result
     expr::Expr
     val
-    meta::Dict
+    meta::ResultMetadata
 end
+
 type Error <: Result
     expr::Expr
     err::Exception
     backtrace
-    meta::Dict
+    meta::ResultMetadata
 end
+
 type Pending <: Result
 end
 
@@ -72,9 +84,9 @@ end
 
 # Builds string with line and context annotations, if available
 format_line(r::Result) = string(
-    haskey(r.meta, :line) ? " :: (line:$(r.meta[:line]))" : "",
+    r.meta.line != nothing ? " :: (line:$(r.meta.line))" : "",
     isempty(contexts) ? "" : " :: $(contexts[end])",
-    get(r.meta,:msg,nothing) != nothing ? " :: $(r.meta[:msg])" : "")
+    r.meta.msg != nothing ? " :: $(r.meta.msg)" : "")
 
 # Define printing functions for the result types
 function Base.show(io::IO, f::Failure)
@@ -118,7 +130,6 @@ macro fact(factex::Expr, args...)
     factex.head != :(=>) && error("Incorrect usage of @fact: $factex")
     expr, assertion = factex.args
     msg = length(args) > 0 ? args[1] : :nothing
-    metaexpr = macroexpand(:(@Compat.compat(Dict(:line => getline(), :msg => $(esc(msg))))))
     quote
         pred = function(t)
             e = $(esc(assertion))
@@ -126,7 +137,8 @@ macro fact(factex::Expr, args...)
         end
         do_fact(() -> pred($(esc(expr))),
                 $(Expr(:quote, factex)),
-                $metaexpr)
+                ResultMetadata(line=getline(),
+                               msg=$(esc(msg))))
     end
 end
 
@@ -135,7 +147,6 @@ end
 # assertion to compare against.
 macro fact_throws(factex::Expr, args...)
     msg = length(args) > 0 ? args[1] : :nothing
-    metaexpr = macroexpand(:(@Compat.compat(Dict(:line => getline(), :msg => $(esc(msg))))))
     quote
         do_fact(()  ->  try
                             $(esc(factex))
@@ -144,14 +155,15 @@ macro fact_throws(factex::Expr, args...)
                             (true, "error")
                         end,
                 $(Expr(:quote, factex)),
-                $metaexpr)
+                ResultMetadata(line=getline(),
+                               msg=$(esc(msg))))
     end
 end
 
 # `do_fact` constructs a Success, Failure, or Error depending on the
 # outcome of a test and passes it off to the active test handler
 # `FactCheck.handlers[end]`. It finally returns the test result.
-function do_fact(thunk::Function, factex::Expr, meta::Dict)
+function do_fact(thunk::Function, factex::Expr, meta::ResultMetadata)
     result = try
         res, val = thunk()
         res ? Success(factex, val, meta) : Failure(factex, val, meta)

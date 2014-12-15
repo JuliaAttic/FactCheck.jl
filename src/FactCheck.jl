@@ -118,6 +118,7 @@ macro fact(factex::Expr, args...)
     factex.head != :(=>) && error("Incorrect usage of @fact: $factex")
     expr, assertion = factex.args
     msg = length(args) > 0 ? args[1] : :nothing
+    metaexpr = macroexpand(:(@Compat.compat(Dict(:line => getline(), :msg => $(esc(msg))))))
     quote
         pred = function(t)
             e = $(esc(assertion))
@@ -125,8 +126,7 @@ macro fact(factex::Expr, args...)
         end
         do_fact(() -> pred($(esc(expr))),
                 $(Expr(:quote, factex)),
-                 @compat(Dict(:line => getline(),
-                              :msg  => $(esc(msg)))))
+                $metaexpr)
     end
 end
 
@@ -135,6 +135,7 @@ end
 # assertion to compare against.
 macro fact_throws(factex::Expr, args...)
     msg = length(args) > 0 ? args[1] : :nothing
+    metaexpr = macroexpand(:(@Compat.compat(Dict(:line => getline(), :msg => $(esc(msg))))))
     quote
         do_fact(()  ->  try
                             $(esc(factex))
@@ -143,8 +144,7 @@ macro fact_throws(factex::Expr, args...)
                             (true, "error")
                         end,
                 $(Expr(:quote, factex)),
-                @compat(Dict(:line => getline(),
-                              :msg  => $(esc(msg)))))
+                $metaexpr)
     end
 end
 
@@ -337,8 +337,11 @@ function getstats()
         end
     end
     assert(s+f+e+p == length(allresults))
-    @compat(Dict{Any,Any}("nSuccesses" => s, "nFailures" => f, "nErrors" => e,
-                          "nNonSuccessful" => f+e, "nPending" => p))
+    @compat(Dict{ByteString,Int}("nSuccesses" => s,
+                                 "nFailures" => f,
+                                 "nErrors" => e,
+                                 "nNonSuccessful" => f+e,
+                                 "nPending" => p))
 end
 
 function exitstatus()

@@ -1,5 +1,9 @@
 # NEWS
 
+## v0.2.3
+
+* CHANGE: Added Compat.jl to address Julia 0.4 deprecations.
+
 ## v0.2.2
 
 * NEW: helpers `less_than`/`less_than_or_equal`/`less_than_or_equal`/`greater_than_or_equal`

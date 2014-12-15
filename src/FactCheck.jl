@@ -7,6 +7,8 @@
 
 module FactCheck
 
+using Compat
+
 export @fact, @fact_throws, @pending,
        facts, context,
        getstats, exitstatus,
@@ -23,7 +25,7 @@ export @fact, @fact_throws, @pending,
 const INDENT = "  "
 
 # Global configuration for FactCheck
-CONFIG = [:compact => false]  # Compact output off by default
+CONFIG = @compat Dict(:compact => false)  # Compact output off by default
 # Not exported: sets output style
 function setstyle(style)
     global CONFIG
@@ -33,7 +35,7 @@ end
 
 ######################################################################
 # Success, Failure, Error <: Result
-# Represents the result of a test. These are very similar to the types 
+# Represents the result of a test. These are very similar to the types
 # with the same names in Base.Test, except for the addition of the
 # `meta` dictionary that is used to retain information about the test,
 # such as its file, line number, description, etc.
@@ -109,31 +111,31 @@ print_compact(s::Pending) = print_with_color(:yellow, "P")
 # Core testing macros and functions
 
 # `@fact` is the workhorse macro. It
-# * takes in the expresion-assertion pair, 
+# * takes in the expresion-assertion pair,
 # * converts it to a function that returns tuple (success, assertval)
 # * processes and stores result of test [do_fact]
 macro fact(factex::Expr, args...)
     factex.head != :(=>) && error("Incorrect usage of @fact: $factex")
     expr, assertion = factex.args
     msg = length(args) > 0 ? args[1] : :nothing
+    metaexpr = macroexpand(:(@Compat.compat(Dict(:line => getline(), :msg => $(esc(msg))))))
     quote
         pred = function(t)
             e = $(esc(assertion))
             isa(e, Function) ? (e(t), t) : (e == t, t)
         end
-        
         do_fact(() -> pred($(esc(expr))),
                 $(Expr(:quote, factex)),
-                [:line => getline(),
-                 :msg  => $(esc(msg))] )
+                $metaexpr)
     end
 end
 
 # `@fact_throws` is similar to `@fact`, except it only checks if
-# the expression throws an error or not - there is no explict 
+# the expression throws an error or not - there is no explict
 # assertion to compare against.
 macro fact_throws(factex::Expr, args...)
     msg = length(args) > 0 ? args[1] : :nothing
+    metaexpr = macroexpand(:(@Compat.compat(Dict(:line => getline(), :msg => $(esc(msg))))))
     quote
         do_fact(()  ->  try
                             $(esc(factex))
@@ -142,12 +144,11 @@ macro fact_throws(factex::Expr, args...)
                             (true, "error")
                         end,
                 $(Expr(:quote, factex)),
-                [:line => getline(),
-                 :msg  => $(esc(msg))] )
+                $metaexpr)
     end
 end
 
-# `do_fact` constructs a Success, Failure, or Error depending on the 
+# `do_fact` constructs a Success, Failure, or Error depending on the
 # outcome of a test and passes it off to the active test handler
 # `FactCheck.handlers[end]`. It finally returns the test result.
 function do_fact(thunk::Function, factex::Expr, meta::Dict)
@@ -213,8 +214,8 @@ function Base.print(io::IO, suite::TestSuite)
 end
 
 function print_header(suite::TestSuite)
-    print_with_color(:bold, 
-        suite.desc     != nothing ? "$(suite.desc)" : "", 
+    print_with_color(:bold,
+        suite.desc     != nothing ? "$(suite.desc)" : "",
         suite.filename != nothing ? " ($(suite.filename))" : "",
         CONFIG[:compact] ? ": " : "\n")
 end
@@ -223,9 +224,9 @@ end
 # test results.
 const handlers = Function[]
 
-# A list of test contexts. `contexts[end]` should be the 
+# A list of test contexts. `contexts[end]` should be the
 # inner-most context.
-const contexts = String[]
+const contexts = AbstractString[]
 
 # Constructs a function that handles Successes, Failures, and Errors,
 # pushing them into a given TestSuite and printing Failures and Errors
@@ -276,7 +277,8 @@ facts(f::Function) = facts(f, nothing)
 # context
 # Executes a battery of tests in some descriptive context, intended
 # for use inside of `facts`. Displays the string in default mode.
-function context(f::Function, desc::String)
+# for use inside of facts
+function context(f::Function, desc::AbstractString)
     push!(contexts, desc)
     !CONFIG[:compact] && println(INDENT, desc)
     f()
@@ -315,7 +317,7 @@ function getline()
     end
 end
 
-pluralize(s::String, n::Number) = n == 1 ? s : string(s, "s")
+pluralize(s::AbstractString, n::Number) = n == 1 ? s : string(s, "s")
 
 # `getstats` return a dictionary with a summary over all tests run
 function getstats()
@@ -335,8 +337,11 @@ function getstats()
         end
     end
     assert(s+f+e+p == length(allresults))
-    {"nSuccesses" => s, "nFailures" => f, "nErrors" => e, 
-     "nNonSuccessful" => f+e, "nPending" => p}
+    @compat(Dict{ByteString,Int}("nSuccesses" => s,
+                                 "nFailures" => f,
+                                 "nErrors" => e,
+                                 "nNonSuccessful" => f+e,
+                                 "nPending" => p))
 end
 
 function exitstatus()

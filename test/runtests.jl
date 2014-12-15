@@ -9,6 +9,7 @@ module TestFactCheck
 
 using FactCheck
 using Base.Test
+using Compat
 
 ############################################################
 # Before we excerse the other various parts of FactCheck,

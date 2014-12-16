@@ -290,11 +290,18 @@ facts(f::Function) = facts(f, nothing)
 # Executes a battery of tests in some descriptive context, intended
 # for use inside of `facts`. Displays the string in default mode.
 # for use inside of facts
+global LEVEL = 1
 function context(f::Function, desc::AbstractString)
+    global LEVEL
     push!(contexts, desc)
-    !CONFIG[:compact] && println(INDENT, desc)
-    f()
-    pop!(contexts)
+    LEVEL += 1
+    !CONFIG[:compact] && println(INDENT^LEVEL * " - ", desc)
+    try
+        f()
+    finally
+        pop!(contexts)
+        LEVEL -= 1
+    end
 end
 context(f::Function) = f()
 

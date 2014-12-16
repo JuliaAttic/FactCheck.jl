@@ -25,13 +25,17 @@ export @fact, @fact_throws, @pending,
 const INDENT = "  "
 
 # Global configuration for FactCheck
-CONFIG = @compat Dict(:compact => false)  # Compact output off by default
+const CONFIG = @compat Dict(:compact => false, :only_stats => false)  # Compact output off by default
 # Not exported: sets output style
 function setstyle(style)
     global CONFIG
     CONFIG[:compact] = (style == :compact)
 end
 
+function onlystats(flag)
+    global CONFIG
+    CONFIG[:only_stats] = flag
+end
 
 ######################################################################
 # Success, Failure, Error <: Result
@@ -172,7 +176,11 @@ function do_fact(thunk::Function, factex::Expr, meta::ResultMetadata)
     end
 
     !isempty(handlers) && handlers[end](result)
-    push!(allresults, result)
+    if CONFIG[:only_stats]
+        updatestats!(getstats([result]))
+    else
+        push!(allresults, result)
+    end
     CONFIG[:compact] && print_compact(result)
     result
 end
@@ -183,7 +191,11 @@ macro pending(factex::Expr, args...)
     quote
         result = Pending()
         !isempty(handlers) && handlers[end](result)
-        push!(allresults, result)
+        if CONFIG[:only_stats]
+            updatestats!(getstats([result]))
+        else
+            push!(allresults, result)
+        end
         CONFIG[:compact] && print_compact(result)
         result
     end
@@ -339,12 +351,14 @@ end
 pluralize(s::AbstractString, n::Number) = n == 1 ? s : string(s, "s")
 
 # `getstats` return a dictionary with a summary over all tests run
-function getstats()
+getstats() = getstats(allresults)
+
+function getstats(results)
     s = 0
     f = 0
     e = 0
     p = 0
-    for r in allresults
+    for r in results
         if isa(r, Success)
             s += 1
         elseif isa(r, Failure)
@@ -355,7 +369,7 @@ function getstats()
             p += 1
         end
     end
-    assert(s+f+e+p == length(allresults))
+    assert(s+f+e+p == length(results))
     @compat(Dict{ByteString,Int}("nSuccesses" => s,
                                  "nFailures" => f,
                                  "nErrors" => e,
@@ -363,8 +377,21 @@ function getstats()
                                  "nPending" => p))
 end
 
+const allstats = getstats()
+
+function updatestats!(stats)
+    for (key, value) in stats
+        allstats[key] += value
+    end
+end
+
 function exitstatus()
-    ns = getstats()["nNonSuccessful"]
+    global CONFIG
+    if CONFIG[:only_stats]
+        ns = allstats["nNonSuccessful"]
+    else
+        ns = getstats()["nNonSuccessful"]
+    end
     ns > 0 && error("FactCheck finished with $ns non-successful tests.")
 end
 

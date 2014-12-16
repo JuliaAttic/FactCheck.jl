@@ -197,6 +197,12 @@ Compact vs default: .F...
 
 The main difference is that single characters only are emitted as the tests run, with all errors only being displayed at the end.
 
+#### Low memory situations
+
+If you run into problems using `FactCheck` in low memory situations like `Travis` consider to activate the option `only_stats`. This will not store results during the testing and provides only statistics in the end. This can be set with `FactCheck.onlystats(true)`.
+
+```
+
 ### Workflow
 
 You can run your tests simply by calling them from the command line, e.g. `julia --color test/runtests.jl`, but another option is to place your tests in a module, e.g.

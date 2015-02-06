@@ -135,7 +135,7 @@ b = [1,2,3]
 @fact a => not(exactly(b))
 ```
 
-#### `approx`/`roughly`
+#### `roughly`
 Test approximate equality of numbers and arrays of numbers using `Base.isapprox`, and accepts same keyword arguments as that function. If a second argument is provided, but no keyword, it is treated as `atol`.
 ```julia
 @fact 2 + 1e-5 => roughly(2.0)

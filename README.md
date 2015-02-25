@@ -77,6 +77,8 @@ facts("Some pending") do
     @pending divide(2,3) => :something
 end
 ```
+produces
+```
 Some pending
 Out of 2 total facts:
   Verified: 1

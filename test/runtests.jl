@@ -51,6 +51,61 @@ facts("Testing core functionality") do
     @fact Foo(1) => Foo(1)
 end
 
+facts("Testing 'context'") do
+    # FactCheck.LEVEL starts from 1
+    @fact FactCheck.LEVEL => 1
+
+    context("context will increase LEVEL and set contexts") do
+        @fact FactCheck.LEVEL => 2
+        @fact FactCheck.contexts[end] => "context will increase LEVEL and set contexts"
+    end
+
+    @fact FactCheck.LEVEL => 1
+
+    # context is called without 'desc' won't increase LEVEL
+    context() do
+        @fact FactCheck.LEVEL => 1
+    end
+
+    context("nested context") do
+        @fact FactCheck.LEVEL => 2
+        @fact FactCheck.contexts[end] => "nested context"
+
+        context("inner") do
+            @fact FactCheck.LEVEL => 3
+            @fact FactCheck.contexts[end] => "inner"
+        end
+    end
+
+    facts("'facts' doesn't increase LEVEL") do
+        @fact FactCheck.LEVEL => 1
+    end
+
+    context("will execute the function which is passed to the 'context'") do
+        executed = false
+        f() = (executed = true)
+
+        @fact executed => false
+        context(f)
+        @fact executed => true
+    end
+
+    context("indent by current LEVEL") do
+        original_STDOUT = STDOUT
+        (out_read, out_write) = redirect_stdout()
+
+        context("intended") do
+            close(out_write)
+            system_output = readavailable(out_read)
+            close(out_read)
+
+            # current LEVEL is 3
+            @fact system_output => "       - intended\n" # "  " ^ 3 * " - " * "intended\n"
+        end
+
+        redirect_stdout(original_STDOUT)
+    end
+end
 
 facts("FactCheck assertion helper functions") do
 

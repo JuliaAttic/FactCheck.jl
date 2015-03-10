@@ -48,6 +48,8 @@ facts("Testing basics") do
     @fact 2*2 => 4
     @fact uppercase("foo") => "FOO"
     @fact_throws 2^-1
+    @fact_throws DomainError 2^-1
+    @fact_throws DomainError 2^-1 "a nifty message"
     @fact 2*[1,2,3] => [2,4,6]
 end
 ```

@@ -149,18 +149,47 @@ end
 # `@fact_throws` is similar to `@fact`, except it only checks if
 # the expression throws an error or not - there is no explict
 # assertion to compare against.
-macro fact_throws(factex::Expr, args...)
-    msg = length(args) > 0 ? args[1] : :nothing
+macro fact_throws(args...)
+    expr, extype, msg = nothing, nothing, nothing
+    nargs = length(args)
+    if nargs == 1
+        if isa(args[1],Expr)
+            expr = args[1]
+        else
+            throw(ArgumentError("invalid @fact_throws macro"))
+        end
+    elseif nargs == 2
+        if isa(args[1],Symbol) && isa(args[2],Expr)
+            extype, expr = args
+        elseif isa(args[1],Expr)
+            expr, msg = args
+        else
+            throw(ArgumentError("invalid @fact_throws macro"))
+        end
+    elseif nargs >= 3
+        if isa(args[1],Symbol) && isa(args[2],Expr)
+            extype, expr, msg = args
+        else
+            throw(ArgumentError("invalid @fact_throws macro"))
+        end
+    end
     quote
-        do_fact(()  ->  try
-                            $(esc(factex))
-                            (false, "no error")
-                        catch e
-                            (true, "error")
-                        end,
-                $(Expr(:quote, factex)),
-                ResultMetadata(line=getline(),
-                               msg=$(esc(msg))))
+        do_fact(() -> try
+                          $(esc(expr))
+                          (false, "no error")
+                      catch ex
+                          $(if is(extype, nothing)
+                              :((true, "error"))
+                            else
+                              :(if isa(ex,$extype)
+                                  (true,"error")
+                                else
+                                  $(:((false, "wrong argument type, expected $($extype) got $(typeof(ex))")))
+                                end)
+                            end)
+                      end,
+                $(Expr(:quote, expr)),
+                ResultMetadata(line=getline(),msg=$(esc(msg))))
     end
 end
 

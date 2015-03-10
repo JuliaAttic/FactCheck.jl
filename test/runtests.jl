@@ -47,8 +47,17 @@ facts("Testing core functionality") do
     @fact 2*2 => 4
     @fact uppercase("foo") => "FOO"
     @fact_throws 2^-1
+    @fact_throws 2^-1 "a domain error happend"
+    @fact_throws DomainError 2^-1
+    @fact_throws DomainError 2^-1 "a domain error happened"
     @fact 2*[1,2,3] => [2,4,6]
     @fact Foo(1) => Foo(1)
+end
+
+facts("Testing invalid @fact_throws macro") do
+    @fact_throws ArgumentError eval(:(@fact_throws "this needs to be an expression"))
+    @fact_throws ArgumentError eval(:(@fact_throws "wrong type" :wrong_type))
+    @fact_throws ArgumentError eval(:(@fact_throws "wrong type" error("this is an error")))
 end
 
 facts("Testing 'context'") do

@@ -100,7 +100,7 @@ However if the assertion is a *function*, then function will be applied to the e
 
 @fact Int[] => isempty
 #..is equivalent to...
-@fact isempy(Int[]) => true
+@fact isempty(Int[]) => true
 ```
 
 `FactCheck` provides several helper functions to make more complicated assertions:

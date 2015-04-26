@@ -110,8 +110,10 @@ facts("Testing 'context'") do
 
             redirect_stdout(original_STDOUT)
             # current LEVEL is 3
-            @fact system_output => "       - intended\n"
+            expected_str = "       - intended\n"
             # "  " ^ 3 * " - " * "intended\n"
+            @fact system_output => (VERSION >= v"0.4-dev" ?
+                                    expected_str.data : expected_str)
         end
     end
 end

@@ -108,11 +108,13 @@ facts("Testing 'context'") do
             system_output = readavailable(out_read)
             close(out_read)
 
+            redirect_stdout(original_STDOUT)
             # current LEVEL is 3
-            @fact system_output => "       - intended\n" # "  " ^ 3 * " - " * "intended\n"
+            expected_str = "       - intended\n"
+            # "  " ^ 3 * " - " * "intended\n"
+            @fact system_output => (VERSION >= v"0.4-dev" ?
+                                    expected_str.data : expected_str)
         end
-
-        redirect_stdout(original_STDOUT)
     end
 end
 

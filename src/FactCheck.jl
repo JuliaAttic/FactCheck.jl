@@ -181,10 +181,10 @@ macro fact_throws(args...)
                           $(if is(extype, nothing)
                               :((true, "error"))
                             else
-                              :(if isa(ex,$extype)
+                              :(if isa(ex,$(esc(extype)))
                                   (true,"error")
                                 else
-                                  $(:((false, "wrong argument type, expected $($extype) got $(typeof(ex))")))
+                                  $(:((false, "wrong argument type, expected $($(esc(extype))) got $(typeof(ex))")))
                                 end)
                             end)
                       end,

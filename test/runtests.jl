@@ -42,6 +42,9 @@ type Baz end
 type Bazz a end
 ==(x::Foo, y::Foo) = x.a == y.a
 
+type MyError <: Exception
+end
+
 facts("Testing core functionality") do
     @fact 1 => 1
     @fact 2*2 => 4
@@ -50,6 +53,8 @@ facts("Testing core functionality") do
     @fact_throws 2^-1 "a domain error happend"
     @fact_throws DomainError 2^-1
     @fact_throws DomainError 2^-1 "a domain error happened"
+    @fact_throws MyError throw(MyError())
+    @fact_throws MyError throw(MyError()) "my error happend"
     @fact 2*[1,2,3] => [2,4,6]
     @fact Foo(1) => Foo(1)
 end

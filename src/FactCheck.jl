@@ -62,6 +62,7 @@ end
 type Failure <: Result
     expr::Expr
     val
+    rhs
     meta::ResultMetadata
 end
 
@@ -96,7 +97,11 @@ format_line(r::Result) = string(
 function Base.show(io::IO, f::Failure)
     indent = isempty(handlers) ? "" : INDENT
     print_with_color(:red, io, indent, "Failure")
-    println(io, indent, format_line(f), " :: got ", f.val)
+    if f.rhs == nothing
+        println(io, indent, format_line(f), " :: got ", f.val)
+    else
+        println(io, indent, format_line(f), " :: Expected ", f.val, ", but got ", f.rhs)
+    end
     print(io, indent^2, format_assertion(f.expr))
 end
 function Base.show(io::IO, e::Error)
@@ -123,6 +128,10 @@ print_compact(e::Error) = print_with_color(:red, "E")
 print_compact(s::Success) = print_with_color(:green, ".")
 print_compact(s::Pending) = print_with_color(:yellow, "P")
 
+
+const VALID_FACTCHECK_FUNCTIONS = Set([:not, :anything, :truthy, :falsey, :exactly, :roughly, :anyof, 
+                                       :less_than, :less_than_or_equal, :greater_than, :greater_than_or_equal])
+
 ######################################################################
 # Core testing macros and functions
 
@@ -134,10 +143,21 @@ macro fact(factex::Expr, args...)
     factex.head != :(=>) && error("Incorrect usage of @fact: $factex")
     expr, assertion = factex.args
     msg = length(args) > 0 ? args[1] : :nothing
+
+    # find the actual right-hand-side expression we care about.  gotta do a little work for roughly, not, etc...
+    if isa(assertion, Expr) && assertion.head == :call && assertion.args[1] in VALID_FACTCHECK_FUNCTIONS
+        rhs = assertion.args[2]
+        if isa(rhs, Expr) && rhs.head == :parameters
+            rhs = assertion.args[3]
+        end
+    else
+        rhs = assertion
+    end
+
     quote
         pred = function(t)
             e = $(esc(assertion))
-            isa(e, Function) ? (e(t), t) : (e == t, t)
+            isa(e, Function) ? (e(t), t, $(esc(rhs))) : (e == t, t, $(esc(rhs)))
         end
         do_fact(() -> pred($(esc(expr))),
                 $(Expr(:quote, factex)),
@@ -176,15 +196,15 @@ macro fact_throws(args...)
     quote
         do_fact(() -> try
                           $(esc(expr))
-                          (false, "no error")
+                          (false, "no error", nothing)
                       catch ex
                           $(if is(extype, nothing)
-                              :((true, "error"))
+                              :((true, "error", nothing))
                             else
                               :(if isa(ex,$(esc(extype)))
-                                  (true,"error")
+                                  (true, "error", nothing)
                                 else
-                                  $(:((false, "wrong argument type, expected $($(esc(extype))) got $(typeof(ex))")))
+                                  $(:((false, "wrong argument type, expected $($(esc(extype))) got $(typeof(ex))", nothing)))
                                 end)
                             end)
                       end,
@@ -198,8 +218,8 @@ end
 # `FactCheck.handlers[end]`. It finally returns the test result.
 function do_fact(thunk::Function, factex::Expr, meta::ResultMetadata)
     result = try
-        res, val = thunk()
-        res ? Success(factex, val, meta) : Failure(factex, val, meta)
+        res, val, rhs = thunk()
+        res ? Success(factex, val, meta) : Failure(factex, val, rhs, meta)
     catch err
         Error(factex, err, catch_backtrace(), meta)
     end

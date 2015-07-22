@@ -97,11 +97,26 @@ format_line(r::Result) = string(
 function Base.show(io::IO, f::Failure)
     indent = isempty(handlers) ? "" : INDENT
     print_with_color(:red, io, indent, "Failure")
-    if f.rhs == nothing
-        println(io, indent, format_line(f), " :: got ", f.val)
-    else
-        println(io, indent, format_line(f), " :: Expected ", f.val, ", but got ", f.rhs)
+
+    errmsg = "got $(f.val)"
+    if f.rhs != nothing
+        args = f.expr.args
+        if length(args) >= 2 &&
+                isa(args[2], Expr) &&
+                !isempty(args[2].args) &&
+                args[2].args[1] in VALID_FACTCHECK_FUNCTIONS
+            fname = args[2].args[1]
+            if haskey(FACTCHECK_FUN_NAMES, fname)
+                errmsg = "Expected: $(f.val) $(FACTCHECK_FUN_NAMES[fname]) $(f.rhs)"
+            else
+                errmsg = "Expected: $(f.val) => $(args[2].args[1])($(f.rhs))"
+            end
+        else
+            errmsg = "Expected: $(f.val) => $(f.rhs)"
+        end
     end
+    println(io, indent, format_line(f), " :: ", errmsg)
+    
     print(io, indent^2, format_assertion(f.expr))
 end
 function Base.show(io::IO, e::Error)
@@ -131,6 +146,11 @@ print_compact(s::Pending) = print_with_color(:yellow, "P")
 
 const VALID_FACTCHECK_FUNCTIONS = Set([:not, :anything, :truthy, :falsey, :exactly, :roughly, :anyof, 
                                        :less_than, :less_than_or_equal, :greater_than, :greater_than_or_equal])
+const FACTCHECK_FUN_NAMES = Dict{Symbol,String}(:roughly => "≅",
+                                                :less_than => "<",
+                                                :less_than_or_equal => "≤",
+                                                :greater_than => ">",
+                                                :greater_than_or_equal => "≥")
 
 ######################################################################
 # Core testing macros and functions

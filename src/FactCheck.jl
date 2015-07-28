@@ -81,10 +81,10 @@ allresults = Result[]
 clear_results() = (global allresults; allresults = Result[])
 
 # Formats a FactCheck assertion
-# e.g. :(fn(1) => 2) to  `fn(1) => 2`
+# e.g. :(fn(1) --> 2) to  `fn(1) --> 2`
 function format_assertion(ex::Expr)
     x, y = ex.args
-    "$x => $y"
+    "$x --> $y"
 end
 
 # Builds string with line and context annotations, if available
@@ -195,7 +195,12 @@ end
 # * converts it to a function that returns tuple (success, assertval)
 # * processes and stores result of test [do_fact]
 macro fact(factex::Expr, args...)
-    factex.head != :(=>) && error("Incorrect usage of @fact: $factex")
+    if factex.head != :(-->) && factex.head != :(=>)
+        error("Incorrect usage of @fact: $factex")
+    end
+    if factex.head == :(=>)
+        Base.warn_once("the `=>` syntax is deprecated, use `-->` instead")
+    end
     expr, assertion = factex.args
     msg = length(args) > 0 ? args[1] : :nothing
 

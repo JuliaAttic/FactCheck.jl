@@ -44,13 +44,13 @@ end
 As for the tests themselves, you can use `FactCheck` to do basic assertions like you would with `Base.Test` using `@fact` and `@fact_throws`:
 ```julia
 facts("Testing basics") do
-    @fact 1 => 1
-    @fact 2*2 => 4
-    @fact uppercase("foo") => "FOO"
+    @fact 1 --> 1
+    @fact 2*2 --> 4
+    @fact uppercase("foo") --> "FOO"
     @fact_throws 2^-1
     @fact_throws DomainError 2^-1
     @fact_throws DomainError 2^-1 "a nifty message"
-    @fact 2*[1,2,3] => [2,4,6]
+    @fact 2*[1,2,3] --> [2,4,6]
 end
 ```
 
@@ -60,7 +60,7 @@ facts("Messages") do
     x = [1, 2, 3, 4]
     y = [4, 2, 3, 1]
     for i in 1:4
-        @fact x[i] => y[i] "mismatch at i=$i"
+        @fact x[i] --> y[i] "mismatch at i=$i"
     end
 end
 ```
@@ -75,8 +75,8 @@ produces
 Finally, if you have an idea for a test you want to implement but haven't yet, you can using `@pending`. `@pending` doesn't attempt to check its assertion, or even evaluate the expression, it simply records that a pending test exists.
 ```julia
 facts("Some pending") do
-    @fact 2*3 => 6
-    @pending divide(2,3) => :something
+    @fact 2*3 --> 6
+    @pending divide(2,3) --> :something
 end
 ```
 produces
@@ -89,18 +89,18 @@ Out of 2 total facts:
 
 ### Assertions
 
-A `FactCheck` `=>` is more general than the `==` of `Base.Test.@test`.
-We refer to the value to the left of the `=>` as the *expression*, and the value to the right of as the *assertion*.
+A `FactCheck` `-->` is more general than the `==` of `Base.Test.@test`.
+We refer to the value to the left of the `-->` as the *expression*, and the value to the right of as the *assertion*.
 If the assertion is a literal value, like `1`, `"FOO"`, or `[2,4,6]`, then `@fact` checks if the expression is equal to the assertion.
 However if the assertion is a *function*, then function will be applied to the expression, e.g.
 ```julia
-@fact 2 => iseven
+@fact 2 --> iseven
 #...is equivalent to...
-@fact iseven(2) => true
+@fact iseven(2) --> true
 
-@fact Int[] => isempty
+@fact Int[] --> isempty
 #..is equivalent to...
-@fact isempty(Int[]) => true
+@fact isempty(Int[]) --> true
 ```
 
 `FactCheck` provides several helper functions to make more complicated assertions:
@@ -108,26 +108,26 @@ However if the assertion is a *function*, then function will be applied to the e
 #### `not`
 Logical not for literal values and functions.
 ```julia
-@fact 1 => not(2)
+@fact 1 --> not(2)
 # is equivalent to
-@fact (1 != 2) => true
+@fact (1 != 2) --> true
 
-@fact 1 => not(iseven)
+@fact 1 --> not(iseven)
 # is equivalent to
-@fact !iseven(1) => true
+@fact !iseven(1) --> true
 ```
 
 #### `anything`
 Anything but `nothing`.
 ```julia
-@fact sin(π) => anything
+@fact sin(π) --> anything
 ```
 
 #### `truthy`, `falsy`, `falsey`
 To be truthy is to be not `nothing`, false, or 0. To be falsy (or falsey) is to be not truthy.
 ```julia
-@fact 1 => truthy
-@fact nothing => falsey
+@fact 1 --> truthy
+@fact nothing --> falsey
 ```
 
 #### `exactly`
@@ -135,18 +135,18 @@ Test equality in the same way that `Base.is`/`Base.===` do. For example, two dis
 ```julia
 a = [1,2,3]
 b = [1,2,3]
-@fact a => b
-@fact a => not(exactly(b))
+@fact a --> b
+@fact a --> not(exactly(b))
 ```
 
 #### `roughly`
 Test approximate equality of numbers and arrays of numbers using `Base.isapprox`, and accepts same keyword arguments as that function. If a second argument is provided, but no keyword, it is treated as `atol`.
 ```julia
-@fact 2 + 1e-5 => roughly(2.0)
-@fact 9.5 => roughly(10; atol=1.0)
+@fact 2 + 1e-5 --> roughly(2.0)
+@fact 9.5 --> roughly(10; atol=1.0)
 A = [2.0, 3.0]
 B = (1 + 1e-6)*A
-@fact A => roughly(B)
+@fact A --> roughly(B)
 ```
 
 #### `less_than`/
@@ -155,17 +155,17 @@ B = (1 + 1e-6)*A
 #### `greater_than_or_equal`
 Test inequality relationships between numbers.
 ```julia
-@fact 1 => less_than(2)
-@fact 1 => less_than_or_equal(1)
-@fact 2 => greater_than(1)
-@fact 2 => greater_than_or_equal(2)
+@fact 1 --> less_than(2)
+@fact 1 --> less_than_or_equal(1)
+@fact 2 --> greater_than(1)
+@fact 2 --> greater_than_or_equal(2)
 ```
 
 #### `anyof`
 Test equality with any of the arguments to `anyof`
 ```julia
-@fact 2+2 => anyof(4, :four, "four")
-@fact 5   => not(anyof(:five, "five"))
+@fact 2+2 --> anyof(4, :four, "four")
+@fact 5   --> not(anyof(:five, "five"))
 ```
 
 ### Exit status
@@ -188,18 +188,18 @@ is `:default`, and the other option currently is `:compact`. To see the differen
 ```julia
 FactCheck.setstyle(:compact)
 facts("Compact vs default") do
-    @fact 1 => 1
-    @fact 2 => 3
-    @fact 3 => 3
-    @fact 4 => 4
-    @fact 5 => 5
+    @fact 1 --> 1
+    @fact 2 --> 3
+    @fact 3 --> 3
+    @fact 4 --> 4
+    @fact 5 --> 5
 end
 ```
 which produces the output
 ```
 Compact vs default: .F...
   Failure   :: (line:274) :: got 2
-    2 => 3
+    2 --> 3
 ```
 
 The main difference is that single characters only are emitted as the tests run, with all errors only being displayed at the end.

@@ -1,5 +1,9 @@
 # NEWS
 
+## v0.2.4
+
+* CHANGE: `=>` has been deprecated, use `-->` instead
+
 ## v0.2.3
 
 * CHANGE: Added Compat.jl to address Julia 0.4 deprecations.

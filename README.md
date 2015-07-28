@@ -12,6 +12,8 @@ MIT Licensed - see LICENSE.md
 
 **Installation**: `julia> Pkg.add("FactCheck")`
 
+> *Note*: The `=>` syntax has been deprecated in v0.3, use `-->` going forward.
+
 > Note: `FactCheck` produces colored output, but only if you run Julia with the `--color` option, e.g. `julia --color test/runtests.jl`
 
 ### Basics

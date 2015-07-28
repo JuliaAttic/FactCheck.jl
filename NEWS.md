@@ -1,6 +1,6 @@
 # NEWS
 
-## v0.2.4
+## v0.3.0
 
 * CHANGE: `=>` has been deprecated, use `-->` instead
 

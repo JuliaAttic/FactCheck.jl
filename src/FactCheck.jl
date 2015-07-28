@@ -101,15 +101,12 @@ function Base.show(io::IO, f::Failure)
     errmsg = "got $(f.val)"
     if f.rhs != nothing
         args = f.expr.args
-        if length(args) >= 2 &&
-                isa(args[2], Expr) &&
-                !isempty(args[2].args) &&
-                args[2].args[1] in VALID_FACTCHECK_FUNCTIONS
-            fname = args[2].args[1]
-            if haskey(FACTCHECK_FUN_NAMES, fname)
-                errmsg = "Expected: $(f.val) $(FACTCHECK_FUN_NAMES[fname]) $(f.rhs)"
+        if length(args) >= 2 && specialFCFunc(args[2]) != nothing
+            fcFunc = specialFCFunc(args[2])
+            if haskey(FACTCHECK_FUN_NAMES, fcFunc)
+                errmsg = "Expected: $(f.val) $(FACTCHECK_FUN_NAMES[fcFunc]) $(f.rhs)"
             else
-                errmsg = "Expected: $(f.val) => $(args[2].args[1])($(f.rhs))"
+                errmsg = "Expected: $(f.val) => $fcFunc($(f.rhs))"
             end
         else
             errmsg = "Expected: $(f.val) => $(f.rhs)"
@@ -144,13 +141,46 @@ print_compact(s::Success) = print_with_color(:green, ".")
 print_compact(s::Pending) = print_with_color(:yellow, "P")
 
 
-const VALID_FACTCHECK_FUNCTIONS = Set([:not, :anything, :truthy, :falsey, :exactly, :roughly, :anyof, 
+const SPECIAL_FACTCHECK_FUNCTIONS = Set([:not, :anything, :truthy, :falsey, :exactly, :roughly, :anyof, 
                                        :less_than, :less_than_or_equal, :greater_than, :greater_than_or_equal])
 @compat const FACTCHECK_FUN_NAMES = Dict{Symbol,String}(:roughly => "≅",
                                                 :less_than => "<",
                                                 :less_than_or_equal => "≤",
                                                 :greater_than => ">",
                                                 :greater_than_or_equal => "≥")
+
+isexpr(x) = isa(x, Expr)
+iscallexpr(x) = isexpr(x) && x.head == :call
+isdotexpr(x) = isexpr(x) && x.head == :.
+isquoteexpr(x) = isexpr(x) && x.head == :quote
+isparametersexpr(x) = isexpr(x) && x.head == :parameters
+
+function specialFCFunc(assertion)
+    iscallexpr(assertion) || return nothing
+
+    # checking for lhs => roughly(rhs)
+    assertion.args[1] in SPECIAL_FACTCHECK_FUNCTIONS && return assertion.args[1]
+
+    # checking for lhs => FactCheck.roughly(rhs)
+    isdotexpr(assertion.args[1]) || return nothing
+    dotexpr = assertion.args[1]
+    length(dotexpr.args) >= 2 || return nothing
+    if isquoteexpr(dotexpr.args[2])
+        quoteexpr = dotexpr.args[2]
+        if length(quoteexpr.args) >= 1 && quoteexpr.args[1] in SPECIAL_FACTCHECK_FUNCTIONS
+            return quoteexpr.args[1]
+        else
+            return nothing
+        end
+    end
+
+    # sometimes it shows up as a QuoteNode...
+    if isa(dotexpr.args[2], QuoteNode) && dotexpr.args[2].value in SPECIAL_FACTCHECK_FUNCTIONS
+        return dotexpr.args[2].value
+    end
+    nothing
+end
+
 
 ######################################################################
 # Core testing macros and functions
@@ -164,14 +194,10 @@ macro fact(factex::Expr, args...)
     expr, assertion = factex.args
     msg = length(args) > 0 ? args[1] : :nothing
 
-    # find the actual right-hand-side expression we care about.  gotta do a little work for roughly, not, etc...
-    if isa(assertion, Expr) && assertion.head == :call && assertion.args[1] in VALID_FACTCHECK_FUNCTIONS
-        rhs = assertion.args[2]
-        if isa(rhs, Expr) && rhs.head == :parameters
-            rhs = assertion.args[3]
-        end
-    else
-        rhs = assertion
+    # rhs is the assertion, unless it's wrapped by a special FactCheck function
+    rhs = assertion
+    if specialFCFunc(assertion) != nothing
+        rhs = assertion.args[isparametersexpr(assertion.args[2]) ? 3 : 2]
     end
 
     quote

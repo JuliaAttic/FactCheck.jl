@@ -101,8 +101,8 @@ function Base.show(io::IO, f::Failure)
     errmsg = "got $(f.val)"
     if f.rhs != nothing
         args = f.expr.args
-        if length(args) >= 2 && specialFCFunc(args[2]) != nothing
-            fcFunc = specialFCFunc(args[2])
+        if length(args) >= 2 && _factcheck_function(args[2]) != nothing
+            fcFunc = _factcheck_function(args[2])
             if haskey(FACTCHECK_FUN_NAMES, fcFunc)
                 errmsg = "Expected: $(f.val) $(FACTCHECK_FUN_NAMES[fcFunc]) $(f.rhs)"
             else
@@ -113,7 +113,7 @@ function Base.show(io::IO, f::Failure)
         end
     end
     println(io, indent, format_line(f), " :: ", errmsg)
-    
+
     print(io, indent^2, format_assertion(f.expr))
 end
 function Base.show(io::IO, e::Error)
@@ -140,14 +140,17 @@ print_compact(e::Error) = print_with_color(:red, "E")
 print_compact(s::Success) = print_with_color(:green, ".")
 print_compact(s::Pending) = print_with_color(:yellow, "P")
 
+const SPECIAL_FACTCHECK_FUNCTIONS =
+    Set([:not, :anything, :truthy, :falsey, :exactly, :roughly, :anyof,
+         :less_than, :less_than_or_equal, :greater_than, :greater_than_or_equal])
 
-const SPECIAL_FACTCHECK_FUNCTIONS = Set([:not, :anything, :truthy, :falsey, :exactly, :roughly, :anyof, 
-                                       :less_than, :less_than_or_equal, :greater_than, :greater_than_or_equal])
-@compat const FACTCHECK_FUN_NAMES = Dict{Symbol,String}(:roughly => "≅",
-                                                :less_than => "<",
-                                                :less_than_or_equal => "≤",
-                                                :greater_than => ">",
-                                                :greater_than_or_equal => "≥")
+@compat const FACTCHECK_FUN_NAMES =
+    Dict{Symbol,String}(
+      :roughly => "≅",
+      :less_than => "<",
+      :less_than_or_equal => "≤",
+      :greater_than => ">",
+      :greater_than_or_equal => "≥")
 
 isexpr(x) = isa(x, Expr)
 iscallexpr(x) = isexpr(x) && x.head == :call
@@ -155,11 +158,13 @@ isdotexpr(x) = isexpr(x) && x.head == :.
 isquoteexpr(x) = isexpr(x) && x.head == :quote
 isparametersexpr(x) = isexpr(x) && x.head == :parameters
 
-function specialFCFunc(assertion)
+function _factcheck_function(assertion)
     iscallexpr(assertion) || return nothing
 
     # checking for lhs => roughly(rhs)
-    assertion.args[1] in SPECIAL_FACTCHECK_FUNCTIONS && return assertion.args[1]
+    if assertion.args[1] in SPECIAL_FACTCHECK_FUNCTIONS
+        return assertion.args[1]
+    end
 
     # checking for lhs => FactCheck.roughly(rhs)
     isdotexpr(assertion.args[1]) || return nothing
@@ -196,7 +201,7 @@ macro fact(factex::Expr, args...)
 
     # rhs is the assertion, unless it's wrapped by a special FactCheck function
     rhs = assertion
-    if specialFCFunc(assertion) != nothing
+    if _factcheck_function(assertion) != nothing
         rhs = assertion.args[isparametersexpr(assertion.args[2]) ? 3 : 2]
     end
 

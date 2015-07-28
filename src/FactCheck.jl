@@ -62,6 +62,7 @@ end
 type Failure <: Result
     expr::Expr
     val
+    rhs
     meta::ResultMetadata
 end
 
@@ -96,7 +97,23 @@ format_line(r::Result) = string(
 function Base.show(io::IO, f::Failure)
     indent = isempty(handlers) ? "" : INDENT
     print_with_color(:red, io, indent, "Failure")
-    println(io, indent, format_line(f), " :: got ", f.val)
+
+    errmsg = "got $(f.val)"
+    if f.rhs != nothing
+        args = f.expr.args
+        if length(args) >= 2 && specialFCFunc(args[2]) != nothing
+            fcFunc = specialFCFunc(args[2])
+            if haskey(FACTCHECK_FUN_NAMES, fcFunc)
+                errmsg = "Expected: $(f.val) $(FACTCHECK_FUN_NAMES[fcFunc]) $(f.rhs)"
+            else
+                errmsg = "Expected: $(f.val) => $fcFunc($(f.rhs))"
+            end
+        else
+            errmsg = "Expected: $(f.val) => $(f.rhs)"
+        end
+    end
+    println(io, indent, format_line(f), " :: ", errmsg)
+    
     print(io, indent^2, format_assertion(f.expr))
 end
 function Base.show(io::IO, e::Error)
@@ -123,6 +140,48 @@ print_compact(e::Error) = print_with_color(:red, "E")
 print_compact(s::Success) = print_with_color(:green, ".")
 print_compact(s::Pending) = print_with_color(:yellow, "P")
 
+
+const SPECIAL_FACTCHECK_FUNCTIONS = Set([:not, :anything, :truthy, :falsey, :exactly, :roughly, :anyof, 
+                                       :less_than, :less_than_or_equal, :greater_than, :greater_than_or_equal])
+@compat const FACTCHECK_FUN_NAMES = Dict{Symbol,String}(:roughly => "≅",
+                                                :less_than => "<",
+                                                :less_than_or_equal => "≤",
+                                                :greater_than => ">",
+                                                :greater_than_or_equal => "≥")
+
+isexpr(x) = isa(x, Expr)
+iscallexpr(x) = isexpr(x) && x.head == :call
+isdotexpr(x) = isexpr(x) && x.head == :.
+isquoteexpr(x) = isexpr(x) && x.head == :quote
+isparametersexpr(x) = isexpr(x) && x.head == :parameters
+
+function specialFCFunc(assertion)
+    iscallexpr(assertion) || return nothing
+
+    # checking for lhs => roughly(rhs)
+    assertion.args[1] in SPECIAL_FACTCHECK_FUNCTIONS && return assertion.args[1]
+
+    # checking for lhs => FactCheck.roughly(rhs)
+    isdotexpr(assertion.args[1]) || return nothing
+    dotexpr = assertion.args[1]
+    length(dotexpr.args) >= 2 || return nothing
+    if isquoteexpr(dotexpr.args[2])
+        quoteexpr = dotexpr.args[2]
+        if length(quoteexpr.args) >= 1 && quoteexpr.args[1] in SPECIAL_FACTCHECK_FUNCTIONS
+            return quoteexpr.args[1]
+        else
+            return nothing
+        end
+    end
+
+    # sometimes it shows up as a QuoteNode...
+    if isa(dotexpr.args[2], QuoteNode) && dotexpr.args[2].value in SPECIAL_FACTCHECK_FUNCTIONS
+        return dotexpr.args[2].value
+    end
+    nothing
+end
+
+
 ######################################################################
 # Core testing macros and functions
 
@@ -134,10 +193,17 @@ macro fact(factex::Expr, args...)
     factex.head != :(=>) && error("Incorrect usage of @fact: $factex")
     expr, assertion = factex.args
     msg = length(args) > 0 ? args[1] : :nothing
+
+    # rhs is the assertion, unless it's wrapped by a special FactCheck function
+    rhs = assertion
+    if specialFCFunc(assertion) != nothing
+        rhs = assertion.args[isparametersexpr(assertion.args[2]) ? 3 : 2]
+    end
+
     quote
         pred = function(t)
             e = $(esc(assertion))
-            isa(e, Function) ? (e(t), t) : (e == t, t)
+            isa(e, Function) ? (e(t), t, $(esc(rhs))) : (e == t, t, $(esc(rhs)))
         end
         do_fact(() -> pred($(esc(expr))),
                 $(Expr(:quote, factex)),
@@ -176,15 +242,15 @@ macro fact_throws(args...)
     quote
         do_fact(() -> try
                           $(esc(expr))
-                          (false, "no error")
+                          (false, "no error", nothing)
                       catch ex
                           $(if is(extype, nothing)
-                              :((true, "error"))
+                              :((true, "error", nothing))
                             else
                               :(if isa(ex,$(esc(extype)))
-                                  (true,"error")
+                                  (true, "error", nothing)
                                 else
-                                  $(:((false, "wrong argument type, expected $($(esc(extype))) got $(typeof(ex))")))
+                                  $(:((false, "wrong argument type, expected $($(esc(extype))) got $(typeof(ex))", nothing)))
                                 end)
                             end)
                       end,
@@ -198,8 +264,8 @@ end
 # `FactCheck.handlers[end]`. It finally returns the test result.
 function do_fact(thunk::Function, factex::Expr, meta::ResultMetadata)
     result = try
-        res, val = thunk()
-        res ? Success(factex, val, meta) : Failure(factex, val, meta)
+        res, val, rhs = thunk()
+        res ? Success(factex, val, meta) : Failure(factex, val, rhs, meta)
     catch err
         Error(factex, err, catch_backtrace(), meta)
     end

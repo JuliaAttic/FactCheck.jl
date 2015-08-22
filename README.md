@@ -14,7 +14,7 @@ MIT Licensed - see LICENSE.md
 
 > *Note*: The `=>` syntax has been deprecated in v0.3, use `-->` going forward.
 
-> Note: `FactCheck` produces colored output, but only if you run Julia with the `--color` option, e.g. `julia --color test/runtests.jl`
+> Note: `FactCheck` produces colored output, but only if you run Julia with the `--color=yes` option, e.g. `julia --color=yes test/runtests.jl`
 
 ### Basics
 

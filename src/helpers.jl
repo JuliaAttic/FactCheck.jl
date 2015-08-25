@@ -35,17 +35,11 @@ roughly(x::Number; kvtols...) = (y::Number) -> isapprox(y, x; kvtols...)
 
 roughly(A::AbstractArray, atol) = (B::AbstractArray) -> begin
     size(A) != size(B) && return false
-    for i in 1:length(A)
-        !isapprox(A[i], B[i], atol=atol) && return false
-    end
-    return true
+    return isapprox(A, B, atol=atol)
 end
 roughly(A::AbstractArray; kvtols...) = (B::AbstractArray) -> begin
     size(A) != size(B) && return false
-    for i in 1:length(A)
-        !isapprox(A[i], B[i]; kvtols...) && return false
-    end
-    return true
+    return isapprox(A, B; kvtols...)
 end
 
 # anyof: match any of the arguments

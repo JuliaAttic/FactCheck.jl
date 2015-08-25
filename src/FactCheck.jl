@@ -117,8 +117,8 @@ function Base.show(io::IO, f::Failure)
         print(io, sub_ind, "Expression: ", f.expr)
         if f.rhs != :fact_throws_noerror
             println(io)
-            println(io, sub_ind, "  Expected: ", f.rhs[1])
-            print(  io, sub_ind, "  Occurred: ", f.rhs[2])
+            println(io, sub_ind, "  Expected: ", f.rhs[2])
+            print(  io, sub_ind, "  Occurred: ", f.rhs[1])
         end
     elseif f.fact_type == :fact
         # @fact didn't get the right result
@@ -140,8 +140,8 @@ function Base.show(io::IO, f::Failure)
             end
         else
             # Normal equality-test-style fact
-            println(io, sub_ind, "  Expected: ", sprint(show, f.lhs))
-            print(  io, sub_ind, "  Occurred: ", sprint(show, f.rhs))
+            println(io, sub_ind, "  Expected: ", sprint(show, f.rhs))
+            print(  io, sub_ind, "  Occurred: ", sprint(show, f.lhs))
         end
     else
         error("Unknown fact type: ", f.fact_type)
@@ -165,8 +165,8 @@ function Base.show(io::IO, s::Success)
     else
         println(io, " :: fact was true")
         println(io, sub_ind, "Expression: ", format_fact(s.expr))
-        println(io, sub_ind, "  Expected: ", sprint(show, s.lhs))
-        print(  io, sub_ind, "  Occurred: ", sprint(show, s.rhs))
+        println(io, sub_ind, "  Expected: ", sprint(show, s.rhs))
+        print(  io, sub_ind, "  Occurred: ", sprint(show, s.lhs))
     end
 end
 function Base.show(io::IO, p::Pending)

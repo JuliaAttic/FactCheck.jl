@@ -48,7 +48,7 @@ abstract Result
 type ResultMetadata
     line
     msg
-    ResultMetadata(;line=nothing, msg=nothing) = begin
+    function ResultMetadata(;line=nothing, msg=nothing)
         new(line, msg)
     end
 end
@@ -80,11 +80,22 @@ end
 allresults = Result[]
 clear_results() = (global allresults; allresults = Result[])
 
-# Formats a FactCheck assertion
-# e.g. :(fn(1) --> 2) to  `fn(1) --> 2`
+# Formats a fact expression
 function format_assertion(ex::Expr)
-    x, y = ex.args
-    "$x --> $y"
+    if ex.head == :(-->) || ex.head == :(=>)
+        # :(fn(1) --> 2) to 'fn(1) --> 2'
+        # :("1"*"1" --> "11") to '"1" * "1" --> "11"'
+        # We handle non-expresion arguments differently,
+        # otherwise, e.g. quote marks on strings disappear
+        x, y = ex.args
+        x_str = sprint(isa(x,Expr) ? print : show, x)
+        y_str = sprint(isa(y,Expr) ? print : show, y)
+        string(x_str, " --> ", y_str)
+    else
+        # Something else, that maybe didn't have a -->
+        # such as @fact_throws. Punt and just stringify
+        string(ex)
+    end
 end
 
 # Builds string with line and context annotations, if available
@@ -136,7 +147,7 @@ end
 
 # When in compact mode, we simply print a single character
 print_compact(f::Failure) = print_with_color(:red, "F")
-print_compact(e::Error) = print_with_color(:red, "E")
+print_compact(e::Error)   = print_with_color(:red, "E")
 print_compact(s::Success) = print_with_color(:green, ".")
 print_compact(s::Pending) = print_with_color(:yellow, "P")
 

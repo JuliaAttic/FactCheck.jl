@@ -117,8 +117,8 @@ function Base.show(io::IO, f::Failure)
         print(io, sub_ind, "Expression: ", f.expr)
         if f.rhs != :fact_throws_noerror
             println(io)
-            println(io, sub_ind, "  Expected: ", f.rhs[2])
-            print(  io, sub_ind, "  Occurred: ", f.rhs[1])
+            println(io, sub_ind, "  Expected: ", f.rhs[1])
+            print(  io, sub_ind, "  Occurred: ", f.rhs[2])
         end
     elseif f.fact_type == :fact
         # @fact didn't get the right result

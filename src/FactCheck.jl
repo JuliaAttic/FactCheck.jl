@@ -53,19 +53,23 @@ end
 
 type Success <: Result
     expr::Expr
-    val
+    fact_type::Symbol
+    lhs  # What it was
+    rhs  # What it should have been
     meta::ResultMetadata
 end
 
 type Failure <: Result
     expr::Expr
-    val
-    rhs
+    fact_type::Symbol
+    lhs  # What it was
+    rhs  # What it should have been
     meta::ResultMetadata
 end
 
 type Error <: Result
     expr::Expr
+    fact_type::Symbol
     err::Exception
     backtrace
     meta::ResultMetadata
@@ -79,15 +83,15 @@ allresults = Result[]
 clear_results() = (global allresults; allresults = Result[])
 
 # Formats a fact expression
-function format_assertion(ex::Expr)
+function format_fact(ex::Expr)
     if ex.head == :(-->) || ex.head == :(=>)
         # :(fn(1) --> 2) to 'fn(1) --> 2'
         # :("1"*"1" --> "11") to '"1" * "1" --> "11"'
         # We handle non-expresion arguments differently,
         # otherwise, e.g. quote marks on strings disappear
         x, y = ex.args
-        x_str = sprint(isa(x,Expr) ? print : show, x)
-        y_str = sprint(isa(y,Expr) ? print : show, y)
+        x_str = sprint(isa(x,Expr) || isa(x,Symbol) ? print : show, x)
+        y_str = sprint(isa(y,Expr) || isa(y,Symbol) ? print : show, y)
         string(x_str, " --> ", y_str)
     else
         # Something else, that maybe didn't have a -->
@@ -104,43 +108,70 @@ format_line(r::Result) = string(
 
 # Define printing functions for the result types
 function Base.show(io::IO, f::Failure)
-    indent = isempty(handlers) ? "" : INDENT
-    print_with_color(:red, io, indent, "Failure")
+    base_ind, sub_ind = get_indent()
+    print_with_color(:red, io, base_ind, "Failure")
 
-    errmsg = "got $(f.val)"
-    if f.rhs != nothing
+    if f.fact_type == :fact_throws
+        # @fact_throws didn't get an error, or the right type of error
+        println(io, format_line(f), " :: ", f.lhs)
+        print(io, sub_ind, "Expression: ", f.expr)
+        if f.rhs != :fact_throws_noerror
+            println(io)
+            println(io, sub_ind, "  Expected: ", f.rhs[1])
+            print(  io, sub_ind, "  Occurred: ", f.rhs[2])
+        end
+    elseif f.fact_type == :fact
+        # @fact didn't get the right result
         args = f.expr.args
+        println(io, format_line(f), " :: fact was false")
+        println(io, sub_ind, "Expression: ", format_fact(f.expr))
         if length(args) >= 2 && _factcheck_function(args[2]) != nothing
+            # Fancy helper fact
             fcFunc = _factcheck_function(args[2])
             if haskey(FACTCHECK_FUN_NAMES, fcFunc)
-                errmsg = "Expected: $(f.val) $(FACTCHECK_FUN_NAMES[fcFunc]) $(f.rhs)"
+                print(io, sub_ind, "  Expected: ",
+                        sprint(show, f.lhs),
+                        " ", FACTCHECK_FUN_NAMES[fcFunc], " ",
+                        sprint(show, f.rhs))
             else
-                errmsg = "Expected: $(f.val) --> $fcFunc($(f.rhs))"
+                print(io, sub_ind, "  Expected: ",
+                        sprint(show, f.lhs), " --> ", fcFunc,
+                        "(", sprint(show, f.rhs), ")")
             end
         else
-            errmsg = "Expected: $(f.val) --> $(f.rhs)"
+            # Normal equality-test-style fact
+            println(io, sub_ind, "  Expected: ", sprint(show, f.lhs))
+            print(  io, sub_ind, "  Occurred: ", sprint(show, f.rhs))
         end
+    else
+        error("Unknown fact type: ", f.fact_type)
     end
-    println(io, indent, format_line(f), " :: ", errmsg)
-
-    print(io, indent^2, format_assertion(f.expr))
 end
 function Base.show(io::IO, e::Error)
-    indent = isempty(handlers) ? "" : INDENT
-    print_with_color(:red, io, indent, "Error")
-    println(io, indent, format_line(e))
-    println(io, indent^2, format_assertion(e.expr))
-    Base.showerror(io, e.err, e.backtrace)
-    print(io)
+    base_ind, sub_ind = get_indent()
+    print_with_color(:red, io, base_ind, "Error")
+    println(io, format_line(e))
+    println(io, sub_ind, "Expression: ", format_fact(e.expr))
+    bt_str = sprint(showerror, e.err, e.backtrace)
+    print(io, join(map(line->string(sub_ind,line),
+                        split(bt_str, "\n")), "\n"))
 end
 function Base.show(io::IO, s::Success)
-    indent = isempty(handlers) ? "" : INDENT
-    print_with_color(:green, io, indent, "Success")
-    print(io, " :: $(format_assertion(s.expr))")
+    base_ind, sub_ind = get_indent()
+    print_with_color(:green, io, base_ind, "Success")
+    print(io, format_line(s))
+    if s.rhs == :fact_throws_error
+        print(io, " :: ", s.lhs)
+    else
+        println(io, " :: fact was true")
+        println(io, sub_ind, "Expression: ", format_fact(s.expr))
+        println(io, sub_ind, "  Expected: ", sprint(show, s.lhs))
+        print(  io, sub_ind, "  Occurred: ", sprint(show, s.rhs))
+    end
 end
 function Base.show(io::IO, p::Pending)
-    indent = isempty(handlers) ? "" : INDENT
-    print_with_color(:yellow, io, indent, "Pending")
+    base_ind, sub_ind = get_indent()
+    print_with_color(:yellow, io, base_ind, "Pending")
 end
 
 # When in compact mode, we simply print a single character
@@ -199,33 +230,47 @@ end
 ######################################################################
 # Core testing macros and functions
 
-# `@fact` is the workhorse macro. It
-# * takes in the expresion-assertion pair,
-# * converts it to a function that returns tuple (success, assertval)
-# * processes and stores result of test [do_fact]
+# @fact takes an assertion of the form LHS --> RHS, and replaces it
+# with code to evaluate that fact (depending on the type of the RHS),
+# and produce and record a result based on the outcome
 macro fact(factex::Expr, args...)
     if factex.head != :(-->) && factex.head != :(=>)
         error("Incorrect usage of @fact: $factex")
     end
     if factex.head == :(=>)
-        Base.warn_once("the `=>` syntax is deprecated, use `-->` instead")
+        Base.warn_once("The `=>` syntax is deprecated, use `-->` instead")
     end
-    expr, assertion = factex.args
-    msg = length(args) > 0 ? args[1] : :nothing
+    # Extract the two sides of the fact
+    lhs, initial_rhs = factex.args
+    # If there is another argument to the macro, assume it is a
+    # message and record it
+    msg = length(args) > 0 ? args[1] : (:nothing)
 
     # rhs is the assertion, unless it's wrapped by a special FactCheck function
-    rhs = assertion
-    if _factcheck_function(assertion) != nothing
-        rhs = assertion.args[isparametersexpr(assertion.args[2]) ? 3 : 2]
+    rhs = initial_rhs
+    if _factcheck_function(initial_rhs) != nothing
+        rhs = initial_rhs.args[isparametersexpr(initial_rhs.args[2]) ? 3 : 2]
     end
 
     quote
-        pred = function(t)
-            e = $(esc(assertion))
-            isa(e, Function) ? (e(t), t, $(esc(rhs))) : (e == t, t, $(esc(rhs)))
+        # Build a function (predicate) that, depending on the nature of
+        # the RHS, either compares the sides or applies the RHS to the LHS
+        predicate = function(lhs_value)
+            rhs_value = $(esc(initial_rhs))
+            if isa(rhs_value, Function)
+                # The RHS is a function, so instead of testing for equality,
+                # return the value of applying the RHS to the LHS
+                (rhs_value(lhs_value), lhs_value, $(esc(rhs)))
+            else
+                # The RHS is a value, so test for equality
+                (rhs_value == lhs_value, lhs_value, $(esc(rhs)))
+            end
         end
-        do_fact(() -> pred($(esc(expr))),
+        # Replace @fact with a call to the do_fact function that constructs
+        # the test result object by evaluating the 
+        do_fact(() -> predicate($(esc(lhs))),
                 $(Expr(:quote, factex)),
+                :fact,
                 ResultMetadata(line=getline(),
                                msg=$(esc(msg))))
     end
@@ -261,19 +306,21 @@ macro fact_throws(args...)
     quote
         do_fact(() -> try
                           $(esc(expr))
-                          (false, "no error", nothing)
+                          (false, "no exception was thrown", :fact_throws_noerror)
                       catch ex
                           $(if is(extype, nothing)
-                              :((true, "error", nothing))
+                              :((true, "an exception was thrown", :fact_throws_error))
                             else
                               :(if isa(ex,$(esc(extype)))
-                                  (true, "error", nothing)
+                                  (true, "correct exception was throw", :fact_throws_error)
                                 else
-                                  $(:((false, "wrong argument type, expected $($(esc(extype))) got $(typeof(ex))", nothing)))
+                                  (false, "wrong exception was thrown",
+                                    ($(esc(extype)),typeof(ex)) )
                                 end)
                             end)
                       end,
                 $(Expr(:quote, expr)),
+                :fact_throws,
                 ResultMetadata(line=getline(),msg=$(esc(msg))))
     end
 end
@@ -281,12 +328,13 @@ end
 # `do_fact` constructs a Success, Failure, or Error depending on the
 # outcome of a test and passes it off to the active test handler
 # `FactCheck.handlers[end]`. It finally returns the test result.
-function do_fact(thunk::Function, factex::Expr, meta::ResultMetadata)
+function do_fact(thunk::Function, factex::Expr, fact_type::Symbol, meta::ResultMetadata)
     result = try
         res, val, rhs = thunk()
-        res ? Success(factex, val, meta) : Failure(factex, val, rhs, meta)
+        res ? Success(factex, fact_type, val, rhs, meta) :
+                Failure(factex, fact_type, val, rhs, meta)
     catch err
-        Error(factex, err, catch_backtrace(), meta)
+        Error(factex, fact_type, err, catch_backtrace(), meta)
     end
 
     !isempty(handlers) && handlers[end](result)
@@ -416,12 +464,12 @@ facts(f::Function) = facts(f, nothing)
 # Executes a battery of tests in some descriptive context, intended
 # for use inside of `facts`. Displays the string in default mode.
 # for use inside of facts
-global LEVEL = 1
+global LEVEL = 0
 function context(f::Function, desc::AbstractString)
     global LEVEL
     push!(contexts, desc)
     LEVEL += 1
-    !CONFIG[:compact] && println(INDENT^LEVEL * " - ", desc)
+    !CONFIG[:compact] && println(INDENT^LEVEL, "> ", desc)
     try
         f()
     finally
@@ -429,8 +477,14 @@ function context(f::Function, desc::AbstractString)
         LEVEL -= 1
     end
 end
-context(f::Function) = f()
+context(f::Function) = context(f, "")
 
+# get_indent
+# Gets indent levels to use for displaying results
+function get_indent()
+    ind_level = isempty(handlers) ? 0 : LEVEL+1
+    return INDENT^ind_level, INDENT^(ind_level+1)
+end
 
 ######################################################################
 

@@ -67,33 +67,33 @@ facts("Testing invalid @fact_throws macro") do
 end
 
 facts("Testing 'context'") do
-    # FactCheck.LEVEL starts from 1
-    @fact FactCheck.LEVEL --> 1
+    # FactCheck.LEVEL starts from 0
+    @fact FactCheck.LEVEL --> 0
 
     context("context will increase LEVEL and set contexts") do
-        @fact FactCheck.LEVEL --> 2
+        @fact FactCheck.LEVEL --> 1
         @fact FactCheck.contexts[end] --> "context will increase LEVEL and set contexts"
     end
 
-    @fact FactCheck.LEVEL --> 1
+    @fact FactCheck.LEVEL --> 0
 
-    # context is called without 'desc' won't increase LEVEL
+    # context called without 'desc' will still increase LEVEL
     context() do
         @fact FactCheck.LEVEL --> 1
     end
 
     context("nested context") do
-        @fact FactCheck.LEVEL --> 2
+        @fact FactCheck.LEVEL --> 1
         @fact FactCheck.contexts[end] --> "nested context"
 
         context("inner") do
-            @fact FactCheck.LEVEL --> 3
+            @fact FactCheck.LEVEL --> 2
             @fact FactCheck.contexts[end] --> "inner"
         end
     end
 
     facts("'facts' doesn't increase LEVEL") do
-        @fact FactCheck.LEVEL --> 1
+        @fact FactCheck.LEVEL --> 0
     end
 
     context("will execute the function which is passed to the 'context'") do
@@ -101,7 +101,7 @@ facts("Testing 'context'") do
         f() = (executed = true)
 
         @fact executed --> false
-        context(f)
+        context(f, "Run f")
         @fact executed --> true
     end
 
@@ -115,9 +115,8 @@ facts("Testing 'context'") do
             close(out_read)
 
             redirect_stdout(original_STDOUT)
-            # current LEVEL is 3
-            expected_str = "       - intended\n"
-            # "  " ^ 3 * " - " * "intended\n"
+            # current LEVEL is 2
+            expected_str = string(FactCheck.INDENT^2,"> intended\n")
             @fact system_output --> (VERSION >= v"0.4-dev" ?
                                     expected_str.data : expected_str)
         end

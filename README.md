@@ -68,10 +68,16 @@ end
 ```
 produces
 ```
-...
-  Failure   :: (line:256) :: mismatch at i=1 :: got 1
-  Failure   :: (line:256) :: mismatch at i=4 :: got 4
-...
+Messages
+  Failure :: (line:505) :: mismatch at i=1 :: fact was false
+    Expression: x[i] --> y[i]
+      Expected: 1
+      Occurred: 4
+  Failure :: (line:505) :: mismatch at i=4 :: fact was false
+    Expression: x[i] --> y[i]
+      Expected: 4
+      Occurred: 1
+# ...
 ```
 
 Finally, if you have an idea for a test you want to implement but haven't yet, you can using `@pending`. `@pending` doesn't attempt to check its assertion, or even evaluate the expression, it simply records that a pending test exists.
@@ -187,8 +193,10 @@ end
 which produces the output
 ```
 Compact vs default: .F...
-  Failure   :: (line:274) :: got 2
-    2 --> 3
+  Failure :: (line:505) :: fact was false
+    Expression: 2 --> 3
+      Expected: 2
+      Occurred: 3
 ```
 
 The main difference is that single characters only are emitted as the tests run, with all errors only being displayed at the end.

@@ -38,12 +38,12 @@ facts("Failing examples") do
         @fact 3 --> iseven
     end
 
-    context() do
+    context("incrementing") do
         x = 10
         @fact inc(inc(inc(0))) --> 2
     end
 
-    context() do
+    context("nonsense") do
         x = 5
         y = 10
         @fact x --> y

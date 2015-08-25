@@ -14,8 +14,6 @@ export @fact, @fact_throws, @pending,
        getstats, exitstatus,
        # Assertion helpers
        not,
-       anything,
-       truthy, falsey, falsy,
        exactly,
        roughly,
        anyof,
@@ -152,7 +150,7 @@ print_compact(s::Success) = print_with_color(:green, ".")
 print_compact(s::Pending) = print_with_color(:yellow, "P")
 
 const SPECIAL_FACTCHECK_FUNCTIONS =
-    Set([:not, :anything, :truthy, :falsey, :exactly, :roughly, :anyof,
+    Set([:not, :exactly, :roughly, :anyof,
          :less_than, :less_than_or_equal, :greater_than, :greater_than_or_equal])
 
 @compat const FACTCHECK_FUN_NAMES =

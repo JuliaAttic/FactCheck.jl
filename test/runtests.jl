@@ -40,6 +40,7 @@ type Foo a end
 type Bar a end
 type Baz end
 type Bazz a end
+importall Base.Operators
 ==(x::Foo, y::Foo) = x.a == y.a
 
 type MyError <: Exception
@@ -136,20 +137,6 @@ facts("FactCheck assertion helper functions") do
         @fact noteven(2) --> false
         @fact not(iseven)(2) --> false
         @fact 3 --> not(iseven)
-    end
-
-    context("`truthy` is anything other than nothing or false (which is 0)") do
-        @fact truthy(-1) --> true
-        @fact truthy("") --> true
-        @fact truthy([]) --> true
-        @fact truthy(Dict())  --> true
-        @fact truthy(nothing) --> false
-        @fact truthy(false)   --> false
-        @fact truthy(0)       --> false
-    end
-
-    context("`anything` is always true") do
-        @fact anything(false)   --> true
     end
 
     context("`exactly` can be used to check object equality") do

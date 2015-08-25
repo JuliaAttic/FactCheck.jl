@@ -119,19 +119,6 @@ Logical not for literal values and functions.
 @fact !iseven(1) --> true
 ```
 
-#### `anything`
-Anything but `nothing`.
-```julia
-@fact sin(π) --> anything
-```
-
-#### `truthy`, `falsy`, `falsey`
-To be truthy is to be not `nothing`, false, or 0. To be falsy (or falsey) is to be not truthy.
-```julia
-@fact 1 --> truthy
-@fact nothing --> falsey
-```
-
 #### `exactly`
 Test equality in the same way that `Base.is`/`Base.===` do. For example, two distinct objects with the same values are not `exactly` the same e.g.
 ```julia

@@ -6,25 +6,17 @@
 ############################################################
 # Assertion helpers
 # - not
-# - anything
-# - truthy, falsey/falsy
 # - exactly
 # - roughly
 # - anyof
+# - less_than
+# - less_than_or_equal
+# - greater_than_or_equal
 ############################################################
 
 # not: logical not for values and functions
 not(x) = isa(x, Function) ? (y) -> !x(y) :
                             (y) -> x != y
-
-# anything: anything but nothing
-anything(x) = (x != nothing)
-
-# truthy: not `nothing`, false (== 0)
-# falsy/falsey: not truthy
-truthy(x) = (x != nothing) && (x != false)
-falsey(x) = not(truthy(x))
-falsy = falsey
 
 # exactly: tests object/function equality (i.e. ===)
 exactly(x) = (y) -> is(x, y)

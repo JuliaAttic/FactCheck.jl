@@ -58,9 +58,6 @@ end
 facts("Assertion helpers") do
 
     @fact 1 --> not(iseven)
-    @fact 1 --> truthy
-    @fact nothing --> falsey
-    @fact false --> anything
     @fact iseven --> exactly(iseven)
     @fact 2.499999 --> roughly(2.5)
     @fact 1 --> less_than(2)

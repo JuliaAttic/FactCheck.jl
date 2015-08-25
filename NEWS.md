@@ -1,5 +1,9 @@
 # NEWS
 
+## v0.4.0
+
+* REMOVED: truthy, falsy, falsey, anthing. They were broken for over a month in FactCheck v0.3 and no one noticed. They are also not particularly Julian.
+
 ## v0.3.0
 
 * CHANGE: `=>` has been deprecated, use `-->` instead

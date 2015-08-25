@@ -48,7 +48,7 @@ end
 facts("Testing core functionality") do
     @fact 1 --> 1
     @fact 2*2 --> 4
-    @fact uppercase("foo") => "FOO"
+    @fact uppercase("foo") --> "FOO"
     @fact_throws 2^-1
     @fact_throws 2^-1 "a domain error happend"
     @fact_throws DomainError 2^-1
@@ -71,7 +71,7 @@ facts("Testing 'context'") do
 
     context("context will increase LEVEL and set contexts") do
         @fact FactCheck.LEVEL --> 2
-        @fact FactCheck.contexts[end] => "context will increase LEVEL and set contexts"
+        @fact FactCheck.contexts[end] --> "context will increase LEVEL and set contexts"
     end
 
     @fact FactCheck.LEVEL --> 1
@@ -173,11 +173,11 @@ facts("FactCheck assertion helper functions") do
 
     context("`roughly` compares matrixes... roughly") do
         X = [1.1 1.2; 2.1 2.2]
-        Y = X + [0 0.000001; -0.00000349 0.00001]
+        Y = X + [+1e-8 -1e-8; -1e-8 +1e-8]
         Z = [1 1; 2 2]
         @fact X --> roughly(Y)
-        @fact X --> roughly(Z; atol=0.2)
-        @fact X --> roughly(Z, 0.2)
+        @fact X --> roughly(Z; atol=0.4)
+        @fact X --> roughly(Z, 0.4)
     end
 
     context("`anyof` compares with all arguments") do

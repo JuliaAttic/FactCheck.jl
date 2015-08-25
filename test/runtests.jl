@@ -171,6 +171,10 @@ facts("FactCheck assertion helper functions") do
         @fact 5   --> not(anyof(:five, "five"))
     end
 
+    context("`anyof` works for functions") do
+        @fact 5 => anyof(5.1, roughly(5.1,0.01), roughly(4.9,0.2))
+    end
+
     context("less_than") do
         @fact 1 --> less_than(2)
     end

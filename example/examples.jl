@@ -71,13 +71,6 @@ immutable DummyWriter <: TestSuiteResultsWriter
 end
 
 function FactCheck.write(dummyWriter::DummyWriter, io::IO, suite::TestSuite)
-  n_succ = length(suite.successes)
-  n_fail = length(suite.failures)
-  n_err  = length(suite.errors)
-  n_pend = length(suite.pending)
-  total  = n_succ + n_fail + n_err + n_pend
-
-  filenamestring = suite.filename != nothing ? "in file $(suite.filename)" : ""
   print(io, "Dummy Writer - ")
   FactCheck.write(io, suite)
 end

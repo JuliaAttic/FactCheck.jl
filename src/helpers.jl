@@ -49,7 +49,7 @@ roughly(A::AbstractArray; kvtols...) = (B::AbstractArray) -> begin
 end
 
 # anyof: match any of the arguments
- anyof(x...) = y -> any(arg->(isa(arg,Function) ? arg(y) : (y==arg)), x)
+anyof(x...) = y -> any(arg->(isa(arg,Function) ? arg(y) : (y==arg)), x)
 
 # less_than: Comparing two numbers
 less_than(compared) = (compare) -> compare < compared

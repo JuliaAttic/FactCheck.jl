@@ -172,7 +172,7 @@ facts("FactCheck assertion helper functions") do
     end
 
     context("`anyof` works for functions") do
-        @fact 5 => anyof(5.1, roughly(5.1,0.01), roughly(4.9,0.2))
+        @fact 5 --> anyof(5.1, roughly(5.1,0.01), roughly(4.9,0.2))
     end
 
     context("less_than") do

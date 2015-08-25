@@ -3,6 +3,7 @@
 ## v0.4.0
 
 * REMOVED: truthy, falsy, falsey, anthing. They were broken for over a month in FactCheck v0.3 and no one noticed. They are also not particularly Julian.
+* CHANGE: improved printing to be a lot more clear about what is the actual value, what is the expected value, and what the expression was.
 
 ## v0.3.0
 

@@ -106,10 +106,10 @@ function Base.show(io::IO, f::Failure)
             if haskey(FACTCHECK_FUN_NAMES, fcFunc)
                 errmsg = "Expected: $(f.val) $(FACTCHECK_FUN_NAMES[fcFunc]) $(f.rhs)"
             else
-                errmsg = "Expected: $(f.val) => $fcFunc($(f.rhs))"
+                errmsg = "Expected: $(f.val) --> $fcFunc($(f.rhs))"
             end
         else
-            errmsg = "Expected: $(f.val) => $(f.rhs)"
+            errmsg = "Expected: $(f.val) --> $(f.rhs)"
         end
     end
     println(io, indent, format_line(f), " :: ", errmsg)

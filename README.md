@@ -4,7 +4,9 @@
 
 [![Build Status](https://travis-ci.org/JuliaLang/FactCheck.jl.svg?branch=master)](https://travis-ci.org/JuliaLang/FactCheck.jl)
 [![codecov.io](http://codecov.io/github/JuliaLang/FactCheck.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaLang/FactCheck.jl?branch=master)
-[![FactCheck](http://pkg.julialang.org/badges/FactCheck_release.svg)](http://pkg.julialang.org/?pkg=FactCheck&ver=release)
+
+[![FactCheck](http://pkg.julialang.org/badges/FactCheck_0.3.svg)](http://pkg.julialang.org/?pkg=FactCheck&ver=0.3)
+[![FactCheck](http://pkg.julialang.org/badges/FactCheck_0.4.svg)](http://pkg.julialang.org/?pkg=FactCheck&ver=0.4)
 
 `FactCheck.jl` is a [Julia](http://julialang.org) testing framework inspired by the [Midje](https://github.com/marick/Midje) library for Clojure. It aims to add more functionality over the basic [Base.Test](http://docs.julialang.org/en/latest/stdlib/test/).
 

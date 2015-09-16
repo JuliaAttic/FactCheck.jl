@@ -185,7 +185,7 @@ const SPECIAL_FACTCHECK_FUNCTIONS =
          :less_than, :less_than_or_equal, :greater_than, :greater_than_or_equal])
 
 @compat const FACTCHECK_FUN_NAMES =
-    Dict{Symbol,String}(
+    Dict{Symbol,AbstractString}(
       :roughly => "≅",
       :less_than => "<",
       :less_than_or_equal => "≤",

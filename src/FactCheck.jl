@@ -18,7 +18,8 @@ export @fact, @fact_throws, @pending,
        roughly,
        anyof,
        less_than, less_than_or_equal,
-       greater_than, greater_than_or_equal
+       greater_than, greater_than_or_equal,
+       within
 
 const INDENT = "  "
 
@@ -182,7 +183,8 @@ print_compact(s::Pending) = print_with_color(:yellow, "P")
 
 const SPECIAL_FACTCHECK_FUNCTIONS =
     Set([:not, :exactly, :roughly, :anyof,
-         :less_than, :less_than_or_equal, :greater_than, :greater_than_or_equal])
+         :less_than, :less_than_or_equal, :greater_than, :greater_than_or_equal,
+         :within])
 
 @compat const FACTCHECK_FUN_NAMES =
     Dict{Symbol,AbstractString}(

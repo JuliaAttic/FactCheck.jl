@@ -209,7 +209,7 @@ If you run into problems using `FactCheck` in low memory situations like `Travis
 
 ### Workflow
 
-You can run your tests simply by calling them from the command line, e.g. `julia --color test/runtests.jl`, but another option is to place your tests in a module, e.g.
+You can run your tests simply by calling them from the command line, e.g. `julia --color=yes test/runtests.jl`, but another option is to place your tests in a module, e.g.
 
 ```jl
 module MyPkgTests

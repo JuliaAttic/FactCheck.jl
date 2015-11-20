@@ -194,6 +194,41 @@ facts("FactCheck assertion helper functions") do
     end
 end
 
+function lineFromOutput(output)
+    answer =  match(r"line:(\d+)", output)
+    answer == nothing? output: parse(Int, answer[1])
+end
+
+if VERSION >= @v_str("0.5-")
+    facts("FactCheck line reporting") do
+
+        context("for facts") do
+            original_STDOUT = STDOUT
+            (out_read, out_write) = redirect_stdout()
+            @fact 1 --> 2
+            pop!(FactCheck.allresults)
+            close(out_write)
+            system_output = readavailable(out_read)  |> ascii
+            close(out_read)
+            redirect_stdout(original_STDOUT)
+            @fact lineFromOutput(system_output) --> 208
+        end
+
+        context("for fact_throws") do
+            original_STDOUT = STDOUT
+            (out_read, out_write) = redirect_stdout()
+            @fact_throws ErrorException () -> 1
+            pop!(FactCheck.allresults)
+            close(out_write)
+            system_output = readavailable(out_read)  |> ascii
+            close(out_read)
+            redirect_stdout(original_STDOUT)
+
+            @fact lineFromOutput(system_output) --> 220
+        end
+    end
+end
+
 exitstatus()
 
 end # module

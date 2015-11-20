@@ -199,7 +199,7 @@ function lineFromOutput(output)
     answer == nothing? output: parse(Int, answer[1])
 end
 
-if VERSION >= @v_str("0.5-")
+if VERSION >= v"0.5-"
     facts("FactCheck line reporting") do
 
         context("for facts") do

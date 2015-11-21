@@ -267,7 +267,7 @@ macro fact(factex::Expr, args...)
             end
         end
         # Replace @fact with a call to the do_fact function that constructs
-        # the test result object by evaluating the 
+        # the test result object by evaluating the
         do_fact(() -> predicate($(esc(lhs))),
                 $(Expr(:quote, factex)),
                 :fact,
@@ -289,7 +289,7 @@ macro fact_throws(args...)
             throw(ArgumentError("invalid @fact_throws macro"))
         end
     elseif nargs == 2
-        if isa(args[1],Symbol) && isa(args[2],Expr)
+        if (isa(args[1],Symbol) || isa(args[1],Expr)) && isa(args[2],Expr)
             extype, expr = args
         elseif isa(args[1],Expr)
             expr, msg = args
@@ -297,7 +297,7 @@ macro fact_throws(args...)
             throw(ArgumentError("invalid @fact_throws macro"))
         end
     elseif nargs >= 3
-        if isa(args[1],Symbol) && isa(args[2],Expr)
+        if (isa(args[1],Symbol) || isa(args[1], Expr)) && isa(args[2],Expr)
             extype, expr, msg = args
         else
             throw(ArgumentError("invalid @fact_throws macro"))

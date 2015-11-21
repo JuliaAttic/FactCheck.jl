@@ -46,6 +46,11 @@ importall Base.Operators
 type MyError <: Exception
 end
 
+module MyModule
+    type MyError <: Exception
+    end
+end
+
 facts("Testing core functionality") do
     @fact 1 --> 1
     @fact 2*2 --> 4
@@ -56,6 +61,8 @@ facts("Testing core functionality") do
     @fact_throws DomainError 2^-1 "a domain error happened"
     @fact_throws MyError throw(MyError())
     @fact_throws MyError throw(MyError()) "my error happend"
+    @fact_throws MyModule.MyError throw(MyModule.MyError())
+    @fact_throws MyModule.MyError throw(MyModule.MyError()) "my error happend"
     @fact 2*[1,2,3] --> [2,4,6]
     @fact Foo(1) --> Foo(1)
 end

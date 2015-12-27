@@ -566,6 +566,7 @@ end
 ############################################################
 # Assertion helpers
 include("helpers.jl")
+include("testexec.jl")
 
 
 end # module FactCheck

@@ -8,6 +8,7 @@
 module FactCheck
 
 using Compat
+import Compat.String
 
 export @fact, @fact_throws, @pending,
        facts, context,
@@ -538,7 +539,7 @@ function getstats(results)
         end
     end
     assert(s+f+e+p == length(results))
-    @compat(Dict{ByteString,Int}("nSuccesses" => s,
+    @compat(Dict{String,Int}("nSuccesses" => s,
                                  "nFailures" => f,
                                  "nErrors" => e,
                                  "nNonSuccessful" => f+e,

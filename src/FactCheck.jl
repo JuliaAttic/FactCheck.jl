@@ -489,33 +489,21 @@ end
 
 ######################################################################
 
-# HACK: get the current line number
-#
-# This only works inside of a function body:
-#
-#     julia> hmm = function()
-#                2
-#                3
-#                getline()
-#            end
-#
-#     julia> hmm()
-#     4
-#
+# HACK: get the @fact or @fact_throws line number from inside of it
 function getline()
+    if VERSION < v"0.5-"
+        return -1
+    end
     bt = backtrace()
-    issecond = false
-    for frame in bt
-        lookup = ccall(:jl_lookup_code_address, Any, (Ptr{Void}, Int32), frame, 0)
-        if lookup != ()
-            if issecond
-                return lookup[3]
-            else
-                issecond = true
-            end
+    for b in bt
+        frame = Profile.lookup(b)
+        if endswith(frame.file, "FactCheck.jl") && frame.inlined_file != ""
+            return frame.inlined_line
         end
     end
+    -1
 end
+
 
 pluralize(s::AbstractString, n::Number) = n == 1 ? s : string(s, "s")
 

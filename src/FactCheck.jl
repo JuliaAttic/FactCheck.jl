@@ -489,32 +489,36 @@ end
 
 ######################################################################
 
-# HACK: get the current line number
-#
-# This only works inside of a function body:
-#
-#     julia> hmm = function()
-#                2
-#                3
-#                getline()
-#            end
-#
-#     julia> hmm()
-#     4
-#
-function getline()
-    bt = backtrace()
-    issecond = false
-    for frame in bt
-        lookup = ccall(:jl_lookup_code_address, Any, (Ptr{Void}, Int32), frame, 0)
-        if lookup != ()
-            if issecond
-                return lookup[3]
-            else
-                issecond = true
+if VERSION < v"0.5.0-dev+2428"
+    # HACK: get the current line number
+    #
+    # This only works inside of a function body:
+    #
+    #     julia> hmm = function()
+    #                2
+    #                3
+    #                getline()
+    #            end
+    #
+    #     julia> hmm()
+    #     4
+    #
+    function getline()
+        bt = backtrace()
+        issecond = false
+        for frame in bt
+            lookup = ccall(:jl_lookup_code_address, Any, (Ptr{Void}, Int32), frame, 0)
+            if lookup != ()
+                if issecond
+                    return lookup[3]
+                else
+                    issecond = true
+                end
             end
         end
     end
+else
+    @noinline getline() = StackTraces.stacktrace()[2].line
 end
 
 pluralize(s::AbstractString, n::Number) = n == 1 ? s : string(s, "s")

@@ -65,6 +65,14 @@ facts("Testing core functionality") do
     @fact_throws MyModule.MyError throw(MyModule.MyError()) "my error happend"
     @fact 2*[1,2,3] --> [2,4,6]
     @fact Foo(1) --> Foo(1)
+    if VERSION >= v"0.5-"
+        hmm = function()
+            2
+            3
+            FactCheck.getline()
+        end
+        @fact hmm() --> 72
+    end
 end
 
 facts("Testing invalid @fact_throws macro") do

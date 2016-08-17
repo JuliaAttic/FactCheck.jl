@@ -122,9 +122,9 @@ facts("Testing 'context'") do
 
     context("indent by current LEVEL") do
         original_STDOUT = STDOUT
-        (out_read, out_write) = redirect_stdout()
         
         if sizeof(STDOUT.buffer.data) > 0
+            (out_read, out_write) = redirect_stdout()
             context("intended") do
                 close(out_write)
                 system_output = readavailable(out_read)

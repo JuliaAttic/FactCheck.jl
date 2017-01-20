@@ -48,3 +48,5 @@ greater_than(compared) = (compare) -> compare > compared
 
 # greater_than_or_equal: Comparing two numbers
 greater_than_or_equal(compared) = (compare) -> compare >= compared
+
+within(range::Range) = (compare) -> compare in range

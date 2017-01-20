@@ -206,6 +206,10 @@ facts("FactCheck assertion helper functions") do
         @fact 2 --> greater_than_or_equal(1)
         @fact 2 --> greater_than_or_equal(2)
     end
+
+    context("within") do
+        @fact 2 --> within(1:3)
+    end
 end
 
 exitstatus()

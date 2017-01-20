@@ -19,7 +19,7 @@ not(x) = isa(x, Function) ? (y) -> !x(y) :
                             (y) -> x != y
 
 # exactly: tests object/function equality (i.e. ===)
-exactly(x) = (y) -> is(x, y)
+exactly(x) = (y) -> x === y
 
 # approx/roughly: Comparing numbers approximately
 roughly(x::Number, atol) = (y::Number) -> isapprox(y, x, atol=atol)

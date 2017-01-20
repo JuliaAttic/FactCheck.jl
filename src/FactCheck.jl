@@ -309,7 +309,7 @@ macro fact_throws(args...)
                           $(esc(expr))
                           (false, "no exception was thrown", :fact_throws_noerror)
                       catch ex
-                          $(if is(extype, nothing)
+                          $(if extype === nothing
                               :((true, "an exception was thrown", :fact_throws_error))
                             else
                               :(if isa(ex,$(esc(extype)))

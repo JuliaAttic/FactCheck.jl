@@ -123,17 +123,16 @@ facts("Testing 'context'") do
     context("indent by current LEVEL") do
         original_STDOUT = STDOUT
         (out_read, out_write) = redirect_stdout()
+        system_output = @async readstring(out_read)
 
         context("intended") do
             close(out_write)
-            system_output = readavailable(out_read)
             close(out_read)
 
             redirect_stdout(original_STDOUT)
             # current LEVEL is 2
             expected_str = string(FactCheck.INDENT^2,"> intended\n")
-            @fact system_output --> (VERSION >= v"0.4-dev" ?
-                                    expected_str.data : expected_str)
+            @fact wait(system_output) --> expected_str
         end
     end
 end

@@ -19,7 +19,11 @@ export @fact, @fact_throws, @pending,
        roughly,
        anyof,
        less_than, less_than_or_equal,
-       greater_than, greater_than_or_equal
+       greater_than, greater_than_or_equal,
+       #TestSuiteResultsWriter support
+       TestSuiteResultsWriter,
+       TestSuite,
+       write
 
 const INDENT = "  "
 
@@ -77,6 +81,16 @@ type Error <: Result
 end
 
 type Pending <: Result
+end
+
+######################################################################
+# DefaultTestSuiteResultsWriter <: TestSuiteResultsWriter
+# Represents how the results of a test are written. The implementation is encapsulated in the
+# write function.  If a writer is not provided to the facts function the DefaultTestSuiteResultsWriter
+# is used in the print function
+abstract TestSuiteResultsWriter
+
+immutable DefaultTestSuiteResultsWriter <: TestSuiteResultsWriter
 end
 
 # Collection of all results across facts
@@ -383,21 +397,12 @@ type TestSuite
 end
 TestSuite(f, d) = TestSuite(f, d, Success[], Failure[], Error[], Pending[])
 
-function Base.print(io::IO, suite::TestSuite)
-    n_succ = length(suite.successes)
-    n_fail = length(suite.failures)
-    n_err  = length(suite.errors)
-    n_pend = length(suite.pending)
-    total  = n_succ + n_fail + n_err + n_pend
-    if n_fail == 0 && n_err == 0 && n_pend == 0
-        print_with_color(:green, io, "$n_succ $(pluralize("fact", n_succ)) verified.\n")
-    else
-        println(io, "Out of $total total $(pluralize("fact", total)):")
-        n_succ > 0 && print_with_color(:green, io, "  Verified: $n_succ\n")
-        n_fail > 0 && print_with_color(:red,   io, "  Failed:   $n_fail\n")
-        n_err  > 0 && print_with_color(:red,   io, "  Errored:  $n_err\n")
-        n_pend > 0 && print_with_color(:yellow,io, "  Pending:  $n_pend\n")
+function Base.print(io::IO, suite::TestSuite, writer::TestSuiteResultsWriter)
+    if writer == nothing
+      writer = DefaultTestSuiteResultsWriter()
     end
+
+    write(writer, io, suite)
 end
 
 function print_header(suite::TestSuite)
@@ -441,16 +446,18 @@ end
 # Creates testing scope. It is responsible for setting up a testing
 # environment, which means constructing a `TestSuite`, generating
 # and registering test handlers, and reporting results.
-function facts(f::Function, desc)
-    suite = TestSuite(nothing, desc)
+function facts(f::Function, desc, filename=nothing, writer::TestSuiteResultsWriter=nothing)
+    suite = TestSuite(filename, desc)
     handler = make_handler(suite)
     push!(handlers, handler)
-    print_header(suite)
     f()
     if !CONFIG[:compact]
         # Print out summary of test suite
-        print(suite)
+        print(suite, writer)
     else
+        #print header unconditionally. print_header is also called in the DefaultTestSuiteResultsWriter
+        print_header(suite)
+
         # If in compact mode, we need to display all the
         # failures we hit along along the way
         println()  # End line with dots
@@ -459,7 +466,10 @@ function facts(f::Function, desc)
     end
     pop!(handlers)
 end
-facts(f::Function) = facts(f, nothing)
+facts(f::Function) = facts(f, nothing, DefaultTestSuiteResultsWriter(), nothing)
+facts(f::Function, desc) = facts(f, desc, nothing, DefaultTestSuiteResultsWriter())
+facts(f::Function, desc, writer::TestSuiteResultsWriter) = facts(f, desc, nothing, writer)
+facts(f::Function, desc, filename) = facts(f, desc, filename, DefaultTestSuiteResultsWriter())
 
 # context
 # Executes a battery of tests in some descriptive context, intended
@@ -556,6 +566,26 @@ function updatestats!(stats)
     for (key, value) in stats
         allstats[key] += value
     end
+end
+
+write(io::IO, suite::TestSuite) = write(DefaultTestSuiteResultsWriter(), io, suite)
+function write(writer::DefaultTestSuiteResultsWriter, io::IO, suite::TestSuite)
+   print_header(suite)
+
+   n_succ = length(suite.successes)
+   n_fail = length(suite.failures)
+   n_err  = length(suite.errors)
+   n_pend = length(suite.pending)
+   total  = n_succ + n_fail + n_err + n_pend
+   if n_fail == 0 && n_err == 0 && n_pend == 0
+       print_with_color(:green, io, "$n_succ $(pluralize("fact", n_succ)) verified.\n")
+   else
+       println(io, "Out of $total total $(pluralize("fact", total)):")
+       n_succ > 0 && print_with_color(:green, io, "  Verified: $n_succ\n")
+       n_fail > 0 && print_with_color(:red,   io, "  Failed:   $n_fail\n")
+       n_err  > 0 && print_with_color(:red,   io, "  Errored:  $n_err\n")
+       n_pend > 0 && print_with_color(:yellow,io, "  Pending:  $n_pend\n")
+   end
 end
 
 function exitstatus()

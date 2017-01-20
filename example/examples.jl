@@ -66,3 +66,25 @@ facts("Assertion helpers") do
     @fact 2 --> greater_than_or_equal(2)
 
 end
+
+immutable DummyWriter <: TestSuiteResultsWriter
+end
+
+function FactCheck.write(dummyWriter::DummyWriter, io::IO, suite::TestSuite)
+  print(io, "Dummy Writer - ")
+  FactCheck.write(io, suite)
+end
+
+facts("TestsSuiteResultsWriter override", DummyWriter()) do
+    @fact 1 --> not(42)
+    @fact 1 --> 1
+end
+
+facts("TestsSuiteResultsWriter override with filename", basename(Base.source_path()), DummyWriter()) do
+    @fact 1 --> not(42)
+    @fact 1 --> 1
+end
+
+facts("Provide filename", basename(Base.source_path())) do
+    @fact 1 --> not(42)
+end

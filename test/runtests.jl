@@ -8,20 +8,22 @@
 module TestFactCheck
 
 using FactCheck
-using Base.Test
 using Compat
+using Compat.Test
 
 ############################################################
 # Before we excerse the other various parts of FactCheck,
 # check we actually catch and report errors correctly. This
 # also allows us to test printing code for the Failure and
 # Error cases, which wouldn't be tested otherwise.
-print_with_color(:blue,"Testing Result counting and printing, not actual errors!\n")
+Compat.printstyled("Testing Result counting and printing, not actual errors!\n", color=:blue)
 facts("Test error pathways") do
     a_success = @fact 1 --> 1 "I will never be seen"
     println(a_success)
     a_failure = @fact 1 --> 2 "one doesn't equal two!"
-    a_error   = @fact 2^-1 --> 0.5 "domains are tricky"
+    # Fixed on Julia PR 24240
+    # a_error = @fact 2^-1 --> 0.5 "domains are tricky"
+    a_error   = @fact invmod(2, 0) --> 0 "a domain error happend"
     a_pending = @pending not_really_pending() "sorta pending"
     println(a_pending)
 end
@@ -32,22 +34,24 @@ FactCheck.clear_results()
 @test stats["nErrors"] == 1
 @test stats["nPending"] == 1
 @test stats["nNonSuccessful"] == 2
-print_with_color(:blue,"Done, begin actual FactCheck tests\n")
+Compat.printstyled("Done, begin actual FactCheck tests\n", color=:blue)
 
 ############################################################
 # Begin actual tests
-type Foo a end
-type Bar a end
-type Baz end
-type Bazz a end
-importall Base.Operators
+mutable struct Foo a end
+mutable struct Bar a end
+mutable struct Baz end
+mutable struct Bazz a end
+struct Jaz end
+struct Jazz a end
+import Base: ==
 ==(x::Foo, y::Foo) = x.a == y.a
 
-type MyError <: Exception
+mutable struct MyError <: Exception
 end
 
 module MyModule
-    type MyError <: Exception
+    mutable struct MyError <: Exception
     end
 end
 
@@ -55,30 +59,41 @@ facts("Testing core functionality") do
     @fact 1 --> 1
     @fact 2*2 --> 4
     @fact uppercase("foo") --> "FOO"
-    @fact_throws 2^-1
-    @fact_throws 2^-1 "a domain error happend"
-    @fact_throws DomainError 2^-1
-    @fact_throws DomainError 2^-1 "a domain error happened"
+    # Fixed on Julia PR 24240
+    #@fact_throws 2^-1
+    #@fact_throws 2^-1 "a domain error happend"
+    #@fact_throws DomainError 2^-1
+    #@fact_throws DomainError 2^-1 "a domain error happened"
+    @fact_throws invmod(2, 0)
+    @fact_throws invmod(2, 0) "a domain error happened"
+    @fact_throws DomainError invmod(2, 0)
+    @fact_throws DomainError invmod(2, 0) "a domain error happened"
     @fact_throws MyError throw(MyError())
     @fact_throws MyError throw(MyError()) "my error happend"
     @fact_throws MyModule.MyError throw(MyModule.MyError())
     @fact_throws MyModule.MyError throw(MyModule.MyError()) "my error happend"
     @fact 2*[1,2,3] --> [2,4,6]
     @fact Foo(1) --> Foo(1)
-    if VERSION >= v"0.5-"
-        hmm = function()
-            2
-            3
-            FactCheck.getline()
-        end
-        @fact hmm() --> 72
+    hmm = function()
+        2
+        3
+        FactCheck.getline() # LINE NUMBER 80
+    end
+    if VERSION >= v"0.7-DEV"
+        @fact hmm() --> 80
     end
 end
 
 facts("Testing invalid @fact_throws macro") do
-    @fact_throws ArgumentError eval(:(@fact_throws "this needs to be an expression"))
-    @fact_throws ArgumentError eval(:(@fact_throws "wrong type" :wrong_type))
-    @fact_throws ArgumentError eval(:(@fact_throws "wrong type" error("this is an error")))
+    if VERSION < v"0.7-DEV"
+        @fact_throws ArgumentError eval(:(@fact_throws "this needs to be an expression"))
+        @fact_throws ArgumentError eval(:(@fact_throws "wrong type" :wrong_type))
+        @fact_throws ArgumentError eval(:(@fact_throws "wrong type" error("this is an error")))
+    else
+        @fact_throws LoadError eval(:(@fact_throws "this needs to be an expression"))
+        @fact_throws LoadError eval(:(@fact_throws "wrong type" :wrong_type))
+        @fact_throws LoadError eval(:(@fact_throws "wrong type" error("this is an error")))
+    end
 end
 
 facts("Testing 'context'") do
@@ -121,9 +136,9 @@ facts("Testing 'context'") do
     end
 
     context("indent by current LEVEL") do
-        original_STDOUT = STDOUT
+        original_STDOUT = Compat.stdout
         (out_read, out_write) = redirect_stdout()
-        system_output = @async readstring(out_read)
+        system_output = @async read(out_read, String)
 
         context("intended") do
             close(out_write)
@@ -132,7 +147,7 @@ facts("Testing 'context'") do
             redirect_stdout(original_STDOUT)
             # current LEVEL is 2
             expected_str = string(FactCheck.INDENT^2,"> intended\n")
-            @fact wait(system_output) --> expected_str
+            @fact Compat.fetch(system_output) --> expected_str
         end
     end
 end
@@ -158,10 +173,18 @@ facts("FactCheck assertion helper functions") do
         x() = ()
         @fact exactly(x)(x) --> true
 
-        # types with no fields return a singleton object when instantiated
-        @fact exactly(Baz())(Baz()) --> true
+        if VERSION < v"0.7-DEV"
+            @fact exactly(Baz())(Baz()) --> true
+            @fact exactly(Bazz(1))(Bazz(1)) --> false
+        else
+            # Fixed on Julia PR 25854
+            @fact exactly(Baz())(Baz()) --> false
+            @fact exactly(Bazz(1))(Bazz(1)) --> false
 
-        @fact exactly(Bazz(1))(Bazz(1)) --> false
+            # immutable types with no fields return a singleton object when instantiated
+            @fact exactly(Jaz())(Jaz()) --> true
+            @fact exactly(Jazz(1))(Jazz(1)) --> true
+        end
     end
 
     context("`roughly` compares numbers... roughly") do

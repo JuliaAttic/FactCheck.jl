@@ -42,9 +42,9 @@ end
 # with the same names in Base.Test, except for the addition of the
 # `ResultMetadata` type that is used to retain information about the test,
 # such as its file, line number, description, etc.
-abstract Result
+abstract type Result end
 
-type ResultMetadata
+mutable struct ResultMetadata
     line
     msg
     function ResultMetadata(;line=nothing, msg=nothing)
@@ -52,7 +52,7 @@ type ResultMetadata
     end
 end
 
-type Success <: Result
+mutable struct Success <: Result
     expr::Expr
     fact_type::Symbol
     lhs  # What it was
@@ -60,7 +60,7 @@ type Success <: Result
     meta::ResultMetadata
 end
 
-type Failure <: Result
+mutable struct Failure <: Result
     expr::Expr
     fact_type::Symbol
     lhs  # What it was
@@ -68,7 +68,7 @@ type Failure <: Result
     meta::ResultMetadata
 end
 
-type Error <: Result
+mutable struct Error <: Result
     expr::Expr
     fact_type::Symbol
     err::Exception
@@ -76,7 +76,7 @@ type Error <: Result
     meta::ResultMetadata
 end
 
-type Pending <: Result
+mutable struct Pending <: Result
 end
 
 # Collection of all results across facts
@@ -110,7 +110,7 @@ format_line(r::Result) = string(
 # Define printing functions for the result types
 function Base.show(io::IO, f::Failure)
     base_ind, sub_ind = get_indent()
-    print_with_color(:red, io, base_ind, "Failure")
+    printstyled(io, base_ind, "Failure"; color=:red)
 
     if f.fact_type == :fact_throws
         # @fact_throws didn't get an error, or the right type of error
@@ -150,7 +150,7 @@ function Base.show(io::IO, f::Failure)
 end
 function Base.show(io::IO, e::Error)
     base_ind, sub_ind = get_indent()
-    print_with_color(:red, io, base_ind, "Error")
+    printstyled(io, base_ind, "Error"; color=:red)
     println(io, format_line(e))
     println(io, sub_ind, "Expression: ", format_fact(e.expr))
     bt_str = sprint(showerror, e.err, e.backtrace)
@@ -159,7 +159,7 @@ function Base.show(io::IO, e::Error)
 end
 function Base.show(io::IO, s::Success)
     base_ind, sub_ind = get_indent()
-    print_with_color(:green, io, base_ind, "Success")
+    printstyled(io, base_ind, "Success"; color=:green)
     print(io, format_line(s))
     if s.rhs == :fact_throws_error
         print(io, " :: ", s.lhs)
@@ -172,14 +172,14 @@ function Base.show(io::IO, s::Success)
 end
 function Base.show(io::IO, p::Pending)
     base_ind, sub_ind = get_indent()
-    print_with_color(:yellow, io, base_ind, "Pending")
+    printstyled(io, base_ind, "Pending"; color=:yellow)
 end
 
 # When in compact mode, we simply print a single character
-print_compact(f::Failure) = print_with_color(:red, "F")
-print_compact(e::Error)   = print_with_color(:red, "E")
-print_compact(s::Success) = print_with_color(:green, ".")
-print_compact(s::Pending) = print_with_color(:yellow, "P")
+print_compact(f::Failure) = printstyled("F"; color=:red)
+print_compact(e::Error)   = printstyled("E"; color=:red)
+print_compact(s::Success) = printstyled("."; color=:green)
+print_compact(s::Pending) = printstyled("P"; color=:yellow)
 
 const SPECIAL_FACTCHECK_FUNCTIONS =
     Set([:not, :exactly, :roughly, :anyof,
@@ -373,7 +373,7 @@ end
 
 # A TestSuite collects the results of a series of tests, as well as
 # some information about the tests such as their file and description.
-type TestSuite
+mutable struct TestSuite
     filename
     desc
     successes::Vector{Success}
@@ -390,21 +390,21 @@ function Base.print(io::IO, suite::TestSuite)
     n_pend = length(suite.pending)
     total  = n_succ + n_fail + n_err + n_pend
     if n_fail == 0 && n_err == 0 && n_pend == 0
-        print_with_color(:green, io, "$n_succ $(pluralize("fact", n_succ)) verified.\n")
+        printstyled(io, "$n_succ $(pluralize("fact", n_succ)) verified.\n"; color=:green)
     else
         println(io, "Out of $total total $(pluralize("fact", total)):")
-        n_succ > 0 && print_with_color(:green, io, "  Verified: $n_succ\n")
-        n_fail > 0 && print_with_color(:red,   io, "  Failed:   $n_fail\n")
-        n_err  > 0 && print_with_color(:red,   io, "  Errored:  $n_err\n")
-        n_pend > 0 && print_with_color(:yellow,io, "  Pending:  $n_pend\n")
+        n_succ > 0 && printstyled(io, "  Verified: $n_succ\n"; color=:green)
+        n_fail > 0 && printstyled(io, "  Failed:   $n_fail\n"; color=:red)
+        n_err  > 0 && printstyled(io, "  Errored:  $n_err\n"; color=:red)
+        n_pend > 0 && printstyled(io, "  Pending:  $n_pend\n"; color=:yellow)
     end
 end
 
 function print_header(suite::TestSuite)
-    print_with_color(:bold,
+    printstyled(
         suite.desc     != nothing ? "$(suite.desc)" : "",
         suite.filename != nothing ? " ($(suite.filename))" : "",
-        CONFIG[:compact] ? ": " : "\n")
+        CONFIG[:compact] ? ": " : "\n"; bold=false)
 end
 
 # The last handler function found in `handlers` will be passed
@@ -542,7 +542,7 @@ function getstats(results)
             p += 1
         end
     end
-    assert(s+f+e+p == length(results))
+    @assert(s+f+e+p == length(results))
     @compat(Dict{String,Int}("nSuccesses" => s,
                                  "nFailures" => f,
                                  "nErrors" => e,
